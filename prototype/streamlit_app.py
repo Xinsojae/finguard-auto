@@ -216,6 +216,131 @@ if st.session_state["dark_mode"]:
       background: #1A2030 !important;
       color: #FFFFFF !important;
     }
+
+    /* ===== Multiselect 내부 텍스트·검색 입력 가시성 ===== */
+    /* 선택된 값/placeholder/검색 input 글씨 모두 밝게 */
+    [data-testid="stSidebar"] .stMultiSelect [data-baseweb="select"] *,
+    .main .stMultiSelect [data-baseweb="select"] *,
+    [data-testid="stSidebar"] .stSelectbox [data-baseweb="select"] *,
+    .main .stSelectbox [data-baseweb="select"] * {
+      color: #E2E8F0 !important;
+    }
+    /* placeholder는 dim하게 유지 */
+    [data-baseweb="select"] [class*="placeholder"] {
+      color: #6B7280 !important;
+    }
+    /* multiselect 내부 input (검색 타이핑) */
+    .stMultiSelect input, .stSelectbox input {
+      background: transparent !important;
+      color: #FFFFFF !important;
+      caret-color: #60A5FA !important;
+    }
+    /* 드롭다운 열림 화살표 */
+    [data-baseweb="select"] svg {
+      fill: #94A3B8 !important;
+    }
+
+    /* ===== 상단 탭 좌우 스크롤 버튼 ===== */
+    /* Streamlit 최신/구버전 모두 커버 */
+    .stTabs [data-baseweb="tab-list"] button:not([role="tab"]),
+    .stTabs button[data-testid="stTabsScrollButton"],
+    button[data-testid="stTabsScrollButton"],
+    [data-testid="stTabsScrollButtonContainer"] button {
+      background: #11161F !important;
+      color: #94A3B8 !important;
+      border: 1px solid #2D3548 !important;
+      border-radius: 6px !important;
+    }
+    .stTabs [data-baseweb="tab-list"] button:not([role="tab"]):hover,
+    .stTabs button[data-testid="stTabsScrollButton"]:hover,
+    button[data-testid="stTabsScrollButton"]:hover,
+    [data-testid="stTabsScrollButtonContainer"] button:hover {
+      background: #1A2030 !important;
+      color: #FFFFFF !important;
+      border-color: #60A5FA !important;
+    }
+    .stTabs [data-baseweb="tab-list"] button svg,
+    button[data-testid="stTabsScrollButton"] svg,
+    [data-testid="stTabsScrollButtonContainer"] svg {
+      fill: #94A3B8 !important;
+    }
+    .stTabs [data-baseweb="tab-list"] button:hover svg,
+    button[data-testid="stTabsScrollButton"]:hover svg {
+      fill: #FFFFFF !important;
+    }
+
+    /* ===== Number input -/+ stepper (자동매수 종목수 등) ===== */
+    .stNumberInput button,
+    [data-testid="stNumberInput"] button,
+    [data-testid="stNumberInputStepDown"],
+    [data-testid="stNumberInputStepUp"] {
+      background: #1A2030 !important;
+      border: 1px solid #2D3548 !important;
+      color: #E2E8F0 !important;
+    }
+    .stNumberInput button:hover,
+    [data-testid="stNumberInputStepDown"]:hover,
+    [data-testid="stNumberInputStepUp"]:hover {
+      background: #2D3548 !important;
+      color: #FFFFFF !important;
+      border-color: #60A5FA !important;
+    }
+    .stNumberInput button svg,
+    [data-testid="stNumberInputStepDown"] svg,
+    [data-testid="stNumberInputStepUp"] svg {
+      fill: #E2E8F0 !important;
+    }
+
+    /* ===== Primary 버튼 글씨 강제 흰색 (자동매수/설명생성/감성분석) ===== */
+    .stButton button[kind="primary"],
+    .stButton button[kind="primary"] *,
+    .stButton button[kind="primary"] p,
+    .stButton button[kind="primary"] span,
+    .stButton button[kind="primary"] div,
+    [data-testid="baseButton-primary"],
+    [data-testid="baseButton-primary"] * {
+      color: #FFFFFF !important;
+    }
+
+    /* ===== 보조 버튼 (secondary) 글씨도 가독성 ===== */
+    .stButton button:not([kind="primary"]),
+    .stButton button:not([kind="primary"]) span,
+    .stButton button:not([kind="primary"]) div,
+    .stButton button:not([kind="primary"]) p {
+      color: #E2E8F0 !important;
+    }
+    .stButton button:not([kind="primary"]) {
+      background: #161C28 !important;
+      border-color: #2D3548 !important;
+    }
+    .stButton button:not([kind="primary"]):hover {
+      background: #1A2030 !important;
+      color: #FFFFFF !important;
+      border-color: #60A5FA !important;
+    }
+
+    /* ===== Download 버튼 다크 ===== */
+    [data-testid="stDownloadButton"] button,
+    .stDownloadButton button {
+      background: #1A2030 !important;
+      border: 1px solid #2D3548 !important;
+      color: #E2E8F0 !important;
+    }
+    [data-testid="stDownloadButton"] button:hover,
+    .stDownloadButton button:hover {
+      background: #2D3548 !important;
+      color: #FFFFFF !important;
+      border-color: #60A5FA !important;
+    }
+    [data-testid="stDownloadButton"] button *,
+    .stDownloadButton button * {
+      color: inherit !important;
+    }
+
+    /* Radio 버튼 (AI Lab / 운영 서브 nav) 다크 친화 */
+    .stRadio label, .stRadio div {
+      color: #E2E8F0 !important;
+    }
     </style>
     """, unsafe_allow_html=True)
 
