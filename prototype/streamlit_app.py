@@ -29,6 +29,7 @@ from tabs import matrix as tab_matrix
 from tabs import news as tab_news
 from tabs import backtest as tab_backtest
 from tabs import disclosure as tab_disclosure
+from tabs import paper as tab_paper
 
 
 # ============================================================
@@ -164,15 +165,16 @@ ctx = AppCtx(
     kfont_fp=KFONT_FP,
 )
 
-t1, t2, t3, t4, t5 = st.tabs([
+t1, t2, t3, t4, t5, t6 = st.tabs([
     "🎯 종목 분석", "🗺️ 2×2 매트릭스", "📰 공시·뉴스",
-    "📈 백테스트", "🔍 공시 분석기",
+    "📈 백테스트", "🔍 공시 분석기", "💼 모의투자",
 ])
 with t1: tab_stocks.render(ctx)
 with t2: tab_matrix.render(ctx)
 with t3: tab_news.render(ctx)
 with t4: tab_backtest.render(ctx)
 with t5: tab_disclosure.render(ctx)
+with t6: tab_paper.render(ctx)
 
 st.divider()
 st.caption("FinGuard Auto · AI 개론 프로젝트 · 2026.05 · 본 프로토타입은 합성 데이터 기반 학술 데모입니다.")
