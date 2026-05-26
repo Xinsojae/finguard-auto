@@ -32,7 +32,10 @@ def _render_event_list(sel, hist) -> None:
         unsafe_allow_html=True,
     )
     if len(events) == 0:
-        st.success("최근 60일 내 분류된 공시 이벤트 없음 (긍정 시그널)")
+        st.info(
+            "최근 60일 내 시뮬레이션 공시 이벤트 없음. "
+            "(실 OpenDART 연동 시 실제 공시 부재로 해석 가능 — 현재는 시뮬레이션이라 의미 없음)"
+        )
         return
     for _, e in events.iterrows():
         risk_val = int(e["disclosure"])

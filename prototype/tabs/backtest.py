@@ -12,7 +12,17 @@ from tabs import AppCtx
 
 def render(ctx: AppCtx) -> None:
     st.subheader("📈 백테스트: A(상승만) vs B(상승+리스크 필터)")
-    st.caption("walk-forward 3-fold · 비중첩 5일 보유 리밸런스 · 거래비용 0.3% (진입+청산)")
+    st.caption(
+        f"walk-forward 3-fold · 비중첩 {ctx.hold_days}일 리밸런스 · "
+        f"수익률 측정 = fwd_ret_5d (고정) · 거래비용 0.3% (진입+청산)"
+    )
+    if ctx.hold_days != 5:
+        st.warning(
+            f"⚠️ hold_days={ctx.hold_days} 설정 — 수익률 측정 horizon은 5일 고정. "
+            f"({ctx.hold_days} < 5 시 forward-label embargo 부족 · "
+            f"{ctx.hold_days} > 5 시 보유 표시와 실 수익 불일치). "
+            f"권장: 5"
+        )
 
     spinner_msg = (f"walk-forward 백테스트 실행 중 "
                    f"(k_top={ctx.k_top}, hold={ctx.hold_days}d, risk_pct={ctx.risk_pct})...")
@@ -34,8 +44,8 @@ def render(ctx: AppCtx) -> None:
         _render_fold_table(per_fold)
         _render_experiments(per_fold, avoided)
 
-    _render_caveat()
-    _render_interpretation(ctx.use_real)
+    _render_caveat(ctx.hold_days)
+    _render_interpretation(ctx.use_real, per_fold)
 
 
 def _render_curve(cum_a, cum_b, per_fold) -> None:
@@ -163,28 +173,44 @@ def _render_experiments(per_fold, avoided) -> None:
                    "세션 단위 라이브 시연은 모의투자 탭 참조.")
 
 
-def _render_caveat() -> None:
+def _render_caveat(hold_days: int = 5) -> None:
     st.divider()
     st.warning(
-        "📐 **방법론 caveat**\n\n"
-        "- **walk-forward 3-fold**: 시작 40%를 warmup, 나머지 60%를 3분할. fold별 재학습 → out-of-time 평가.\n"
-        "- **비중첩 5일 보유**: 5거래일마다 리밸런스. 이전 합성 코드의 *일별 picks를 일별 컴파운드*하던 버그(5일 중첩 fwd_ret) 수정.\n"
-        "- **거래비용**: 진입+청산 단순 0.3% 차감. 슬리피지·시장충격·세금 미반영.\n"
-        "- **kill-switch 미적용**: 손절(-3%)·익절(+5%)·일일 손실 한도 미시뮬레이션 (기획서 §12 확장)."
+        f"📐 **방법론 caveat**\n\n"
+        f"- **walk-forward 3-fold**: 시작 40%를 warmup, 나머지 60%를 3분할. fold별 재학습 → out-of-time 평가.\n"
+        f"- **비중첩 {hold_days}일 보유**: {hold_days}거래일마다 리밸런스. 이전 합성 코드의 *일별 picks를 일별 컴파운드*하던 버그 수정.\n"
+        f"- **타깃 horizon 고정**: 수익률 측정은 항상 fwd_ret_5d (5일 후 수익률). "
+        f"hold_days를 5보다 작게 설정하면 forward-label 누수 가능 — 5 권장.\n"
+        f"- **거래비용**: 진입+청산 단순 0.3% 차감. 슬리피지·시장충격·세금 미반영.\n"
+        f"- **kill-switch 미적용**: 손절·익절·일일 손실 한도는 모의투자 탭에서 별도 시뮬레이션."
     )
 
 
-def _render_interpretation(use_real: bool) -> None:
+def _render_interpretation(use_real: bool, per_fold: list = None) -> None:
+    """per_fold에서 실측 평균 ROC-AUC 계산 후 표시 (고정 문구 X)."""
     st.markdown("**📝 해석**")
+    # 실측 평균 fold ROC-AUC
+    avg_up = avg_cr = None
+    if per_fold:
+        ups = [r.get("up_auc", 0) for r in per_fold if r.get("up_auc")]
+        crs = [r.get("cr_auc", 0) for r in per_fold if r.get("cr_auc")]
+        if ups:
+            avg_up = sum(ups) / len(ups)
+        if crs:
+            avg_cr = sum(crs) / len(crs)
+    auc_text = ""
+    if avg_up is not None and avg_cr is not None:
+        auc_text = f" (현재 fold 평균 ROC-AUC — 상승: **{avg_up:.3f}**, 급락: **{avg_cr:.3f}**)"
     if use_real:
         st.info(
-            "**실데이터 모드**: KOSPI 99종목 / 2021~2025 / NLP 피처는 룰베이스 공시 분류만 주입 "
-            "(KF-DeBERTa 뉴스·공시 모델은 확장 계획). 급락 모델 ROC-AUC는 합성 0.58 → 실 0.63 개선 "
-            "확인됨. B(리스크 필터)가 A를 상회하는 정도는 fold별 변동성이 큽니다."
+            "**실데이터 모드**: KOSPI 99종목 / 2021~2025. "
+            "공시·뉴스·시장국면 NLP는 시뮬레이션, 가격·거래량은 실데이터. "
+            "(KF-DeBERTa·OpenDART는 확장 계획)" + auc_text + ". "
+            "B(리스크 필터)가 A를 상회하는 정도는 fold·파라미터에 따라 변동."
         )
     else:
         st.info(
-            "**합성 데이터 모드**: GARCH형 패널. 급락 신호가 약해(ROC-AUC ~0.58) 리스크 필터(B)가 "
-            "A 대비 유의미한 개선을 보이지 못할 수 있습니다. **실데이터 모드 + KF-DeBERTa 추가 시 "
-            "B가 A를 상회할 것으로 가설**합니다. 발표에서 '솔직한 베이스라인 + 개선 방향'으로 제시 가능."
+            "**합성 데이터 모드**: GARCH형 패널" + auc_text + ". "
+            "**실데이터 모드 + KF-DeBERTa 추가 시 B가 A를 상회할 것으로 가설**. "
+            "발표에서 '솔직한 베이스라인 + 개선 방향'으로 제시 가능."
         )

@@ -167,8 +167,16 @@ def classify(text: str) -> List[DisclosureResult]:
                 explanation=explanation, checkpoints=checkpoints,
                 similar_cases=similar,
             ))
-    # 위험도 절댓값 큰 것부터
-    matches.sort(key=lambda r: (-abs(r.risk_score), -r.confidence))
+    # 정렬 우선순위:
+    #   1) 악재 우선 (risk_score < 0) — 동일 |risk| 충돌 시 위험 사건이 top
+    #      예: 관리종목(-3) + 자사주소각(+3) 동시 매칭 시 관리종목이 top
+    #   2) |risk_score| 큰 순
+    #   3) confidence 높은 순
+    matches.sort(key=lambda r: (
+        0 if r.risk_score < 0 else 1,
+        -abs(r.risk_score),
+        -r.confidence,
+    ))
     return matches
 
 
