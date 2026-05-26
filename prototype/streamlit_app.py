@@ -37,6 +37,7 @@ from tabs import portfolio as tab_portfolio
 from tabs import ai_lab as tab_ai_lab
 from tabs import ops as tab_ops
 from tabs import compare as tab_compare
+from tabs import business as tab_business
 from core import mocks
 from core.tour import render_tour_widget
 
@@ -592,10 +593,10 @@ ctx = AppCtx(
     kfont_fp=KFONT_FP,
 )
 
-t1, t2, t3, t4, t5, t6, t7, t8, t9, t10 = st.tabs([
+t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, t11 = st.tabs([
     "🎯 종목 분석", "🗺️ 매트릭스", "🔄 비교", "📰 공시·뉴스",
     "📈 백테스트", "🔍 공시 분석기", "💼 모의투자", "📊 포트폴리오",
-    "🧪 AI Lab", "🛠️ 운영",
+    "🧪 AI Lab", "🛠️ 운영", "🏢 사업·운영",
 ])
 with t1: tab_stocks.render(ctx)
 with t2: tab_matrix.render(ctx)
@@ -607,6 +608,50 @@ with t7: tab_paper.render(ctx)
 with t8: tab_portfolio.render(ctx)
 with t9: tab_ai_lab.render(ctx)
 with t10: tab_ops.render(ctx)
+with t11: tab_business.render(ctx)
 
 st.divider()
-st.caption("FinGuard Auto · AI 개론 프로젝트 · 2026.05 · 본 프로토타입은 합성 데이터 기반 학술 데모입니다.")
+
+# ----- 법적 고지 (§19.3) -----
+with st.expander("⚖️ 법적 고지 및 규제 준수 (§19.3)"):
+    st.markdown("""
+**1. 본 서비스의 법적 성격**
+
+- FinGuard Auto는 **자본시장법 제101조 (유사투자자문업)** 회피 구조로 설계되었습니다.
+  - 일대일 자문이 아닌 **불특정 다수 대상 정보 제공**
+  - 개별 종목 추천이 아닌 **위험 분석·교육 포지셔닝**
+- 자본시장법 **제18조 (투자자문업)** 인가를 받지 않은 비자문 서비스입니다.
+- 실거래 자동매매가 아닌 **모의투자 한정** — 전자금융거래법상 별도 인가 불요.
+
+**2. 위험 고지**
+
+- 본 서비스는 특정 종목의 **매수·매도 권유가 아닙니다**.
+- 공개 데이터 기반의 **교육용·의사결정 보조 시스템**입니다.
+- 모든 분석 결과는 참고 정보이며, **최종 투자 판단과 책임은 사용자에게 있습니다**.
+- 과거 성과는 미래 수익을 **보장하지 않습니다**.
+- AI 분석은 **오류 가능성**이 있으며, 데이터 지연·누락 가능성이 있습니다.
+
+**3. 사용 표현 가이드 (§19.1·§19.2)**
+
+| 피해야 할 표현 | 사용 표현 |
+|---|---|
+| 매수/매도 추천 | 관심 후보 / 회피 후보 |
+| 수익 보장 | 위험 분석 결과 |
+| 오늘 사야 할 종목 | 분석 결과 |
+| 자동매매로 돈 벌기 | 모의 검증 |
+| 개인 맞춤 투자 조언 | 의사결정 보조 |
+
+**4. 데이터 출처**
+
+- 가격·거래량: KRX (FinanceDataReader)
+- 공시: OpenDART API (확장 계획)
+- 뉴스: 포털 RSS·검색 API (확장 계획)
+
+**5. 학술 데모 안내**
+
+본 프로토타입은 AI 개론 학기말 프로젝트로 제작된 **학술 데모**이며, 실제 운영 서비스가 아닙니다.
+실 운영을 위해서는 금융감독원 등록·법무 검토·보안 인증 등이 추가로 필요합니다.
+""")
+
+st.caption("FinGuard Auto · AI 개론 학기말 프로젝트 · 2026.05 · "
+           "본 프로토타입은 학술 데모이며, 매수·매도 추천이 아닙니다.")
