@@ -34,6 +34,9 @@ from tabs import backtest as tab_backtest
 from tabs import disclosure as tab_disclosure
 from tabs import paper as tab_paper
 from tabs import portfolio as tab_portfolio
+from tabs import ai_lab as tab_ai_lab
+from tabs import ops as tab_ops
+from core import mocks
 
 
 # ============================================================
@@ -42,8 +45,22 @@ from tabs import portfolio as tab_portfolio
 st.set_page_config(page_title="FinGuard Auto", page_icon="🛡️", layout="wide")
 apply_css()
 
-st.title("🛡️ FinGuard Auto")
-st.caption("개인투자자를 위한 설명 가능한 AI 리스크 분석·투자 학습·모의 검증 플랫폼")
+# 상단 헤더 바 (프로덕션 스타일)
+st.markdown(
+    """
+    <div class='app-header'>
+      <div>
+        <h1>🛡️ FinGuard Auto</h1>
+        <div class='subtitle'>개인투자자를 위한 설명 가능한 AI 리스크 분석·투자 학습·모의 검증 플랫폼</div>
+      </div>
+      <div class='right'>
+        <span class='pill'>v0.7 prototype</span>
+        <span class='pill'>학술 데모</span>
+      </div>
+    </div>
+    """,
+    unsafe_allow_html=True,
+)
 
 
 # ============================================================
@@ -142,6 +159,15 @@ with st.spinner(("실데이터 로드" if USE_REAL else "합성 데이터 생성
 
 
 # ============================================================
+# 알림 (st.toast) — 첫 진입 1회 노출
+# ============================================================
+if "alerts_shown" not in st.session_state:
+    for alert in mocks.generate_alerts(snap)[:4]:
+        st.toast(f"{alert['icon']} {alert['msg']}")
+    st.session_state["alerts_shown"] = True
+
+
+# ============================================================
 # 사이드바 — 워치리스트 + 시장 요약 + 모델 성능
 # ============================================================
 mkt_risk = int(snap["score_risk"].mean())
@@ -169,6 +195,19 @@ with st.sidebar:
     st.metric("상승 ROC-AUC", f"{metrics['up_auc']:.3f}")
     st.metric("급락 ROC-AUC", f"{metrics['cr_auc']:.3f}")
     st.caption("PoC 베이스라인. KF-DeBERTa 추가 시 향상 예상.")
+    st.divider()
+    # ----- 알림 (사이드바 상단 영역) -----
+    alerts = mocks.generate_alerts(snap)
+    st.subheader(f"🔔 알림 ({len(alerts)})")
+    if alerts:
+        for a in alerts[:5]:
+            st.markdown(f"<div style='padding:6px 10px;background:#FAFAFA;"
+                        f"border-left:3px solid #FFB74D;border-radius:4px;"
+                        f"margin:4px 0;font-size:0.85em;'>"
+                        f"{a['icon']} {a['msg']}</div>",
+                        unsafe_allow_html=True)
+    else:
+        st.caption("주요 알림 없음.")
 
 
 # ============================================================
@@ -183,9 +222,10 @@ ctx = AppCtx(
     kfont_fp=KFONT_FP,
 )
 
-t1, t2, t3, t4, t5, t6, t7 = st.tabs([
-    "🎯 종목 분석", "🗺️ 2×2 매트릭스", "📰 공시·뉴스",
+t1, t2, t3, t4, t5, t6, t7, t8, t9 = st.tabs([
+    "🎯 종목 분석", "🗺️ 매트릭스", "📰 공시·뉴스",
     "📈 백테스트", "🔍 공시 분석기", "💼 모의투자", "📊 포트폴리오",
+    "🧪 AI Lab", "🛠️ 운영",
 ])
 with t1: tab_stocks.render(ctx)
 with t2: tab_matrix.render(ctx)
@@ -194,6 +234,8 @@ with t4: tab_backtest.render(ctx)
 with t5: tab_disclosure.render(ctx)
 with t6: tab_paper.render(ctx)
 with t7: tab_portfolio.render(ctx)
+with t8: tab_ai_lab.render(ctx)
+with t9: tab_ops.render(ctx)
 
 st.divider()
 st.caption("FinGuard Auto · AI 개론 프로젝트 · 2026.05 · 본 프로토타입은 합성 데이터 기반 학술 데모입니다.")

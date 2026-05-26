@@ -17,6 +17,9 @@ from core.confidence import (
     ConfidenceBreakdown,
 )
 from core.ui import classify, tag_html, apply_css
+from core.ui_kit import (
+    demo_badge, section_header, info_card, status_pill, metric_row,
+)
 
 __all__ = [
     "FEATS", "FEAT_KOR", "SECTOR_NAMES", "FAKE_NAMES",
