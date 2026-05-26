@@ -358,6 +358,85 @@ if st.session_state["dark_mode"]:
       background: #3F4859;
     }
 
+    /* ============================================================
+       Streamlit selectbox VirtualDropdown — 최신 emotion 캐시 클래스 대응
+       (사용자 제공 HTML 기반: data-testid="stSelectboxVirtualDropdown",
+        st-emotion-cache-* 동적 클래스, virtual scroll container)
+       ============================================================ */
+    [data-testid="stSelectboxVirtualDropdown"],
+    [data-testid="stSelectboxVirtualDropdown"] > div,
+    [data-testid="stSelectboxVirtualDropdown"] > div > div {
+      background: #11161F !important;
+      background-color: #11161F !important;
+    }
+
+    /* virtual scroll inner container (인라인 height/overflow:auto) */
+    [data-testid="stSelectboxVirtualDropdown"] [style*="overflow: auto"],
+    [data-testid="stSelectboxVirtualDropdown"] [style*="overflow:auto"] {
+      background: #11161F !important;
+      background-color: #11161F !important;
+    }
+
+    /* 옵션 li — 기본 / hover / selected */
+    [data-testid="stSelectboxVirtualDropdown"] li[role="option"] {
+      background: #11161F !important;
+      background-color: #11161F !important;
+      color: #E2E8F0 !important;
+      transition: background 0.12s ease !important;
+    }
+    [data-testid="stSelectboxVirtualDropdown"] li[role="option"]:hover {
+      background: #1A2030 !important;
+      background-color: #1A2030 !important;
+      color: #FFFFFF !important;
+    }
+    [data-testid="stSelectboxVirtualDropdown"] li[role="option"][aria-selected="true"] {
+      background: #1E2A44 !important;
+      background-color: #1E2A44 !important;
+      color: #60A5FA !important;
+      font-weight: 600 !important;
+    }
+    [data-testid="stSelectboxVirtualDropdown"] li[role="option"][aria-selected="true"]:hover {
+      background: #243352 !important;
+      background-color: #243352 !important;
+    }
+
+    /* 옵션 내부 모든 wrapper div (st-emotion-cache-*) 투명 + 텍스트 명도 */
+    [data-testid="stSelectboxVirtualDropdown"] li[role="option"] *,
+    [data-testid="stSelectboxVirtualDropdown"] li[role="option"] div,
+    [data-testid="stSelectboxVirtualDropdown"] li[role="option"] span {
+      background: transparent !important;
+      background-color: transparent !important;
+      color: inherit !important;
+    }
+
+    /* selected 옵션 내부 텍스트 강조 */
+    [data-testid="stSelectboxVirtualDropdown"] li[aria-selected="true"] * {
+      color: #60A5FA !important;
+    }
+
+    /* Tooltip hover target (옵션 hover 시 표시되는 tooltip 영역) */
+    [data-testid="stSelectboxVirtualDropdown"] [data-testid="stTooltipHoverTarget"] {
+      background: transparent !important;
+      background-color: transparent !important;
+    }
+
+    /* virtual dropdown scrollbar */
+    [data-testid="stSelectboxVirtualDropdown"] ::-webkit-scrollbar {
+      width: 10px;
+      background: #11161F;
+    }
+    [data-testid="stSelectboxVirtualDropdown"] ::-webkit-scrollbar-thumb {
+      background: #2D3548;
+      border-radius: 4px;
+      border: 2px solid #11161F;
+    }
+    [data-testid="stSelectboxVirtualDropdown"] ::-webkit-scrollbar-thumb:hover {
+      background: #3F4859;
+    }
+    [data-testid="stSelectboxVirtualDropdown"] ::-webkit-scrollbar-track {
+      background: #11161F;
+    }
+
     /* ===== Multiselect 내부 텍스트·검색 입력 가시성 ===== */
     /* 선택된 값/placeholder/검색 input 글씨 모두 밝게 */
     [data-testid="stSidebar"] .stMultiSelect [data-baseweb="select"] *,
