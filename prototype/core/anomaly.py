@@ -10,6 +10,9 @@ import pandas as pd
 import streamlit as st
 from sklearn.ensemble import IsolationForest
 
+# walk-forward 누수 차단용 embargo
+ANOMALY_EMBARGO_DAYS = 5
+
 ANOMALY_FEATS = [
     "ret_1d", "ret_5d", "vol_5d", "vol_20d",
     "vol_z_20", "drawdown_20", "ma_ratio",
@@ -18,17 +21,25 @@ ANOMALY_FEATS = [
 
 @st.cache_resource
 def train_anomaly_detector(panel: pd.DataFrame, contamination: float = 0.05):
-    """패널 전체로 IsolationForest 학습.
+    """unique date 70/30 + embargo 적용 IsolationForest.
 
-    contamination: 이상치 비율 가정 (기본 5%).
+    이전 버그: iloc[:70%] 행 분할 → (stock_id, date) 정렬 panel에서
+    종목 70% 학습 / 30% 테스트가 되어 시간 분할 아니었음. snap 최신일
+    평가 시 학습/미학습 종목 혼재.
     """
     df = panel.dropna(subset=ANOMALY_FEATS)
     if df.empty:
         return None
-    # 시간순 학습 (랜덤 분할 금지)
-    n = len(df)
-    cut = int(n * 0.7)
-    tr = df.iloc[:cut][ANOMALY_FEATS]
+    dates = np.array(sorted(df["date"].unique()))
+    n_dates = len(dates)
+    if n_dates < 30:
+        # 너무 짧으면 전체로 fit (그래도 시간순 fit)
+        tr = df[ANOMALY_FEATS]
+    else:
+        cut_idx = int(n_dates * 0.7)
+        train_end_idx = max(cut_idx - ANOMALY_EMBARGO_DAYS, 1)
+        train_dates = dates[:train_end_idx]
+        tr = df[df["date"].isin(train_dates)][ANOMALY_FEATS]
     model = IsolationForest(
         n_estimators=200,
         contamination=contamination,

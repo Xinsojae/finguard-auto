@@ -15,18 +15,29 @@ import lightgbm as lgb
 from core.config import FEATS
 
 
+QUANTILE_EMBARGO_DAYS = 5
+
+
 @st.cache_resource
 def train_quantile_model(panel: pd.DataFrame, alpha: float = 0.10):
-    """fwd_ret_5d의 alpha 분위(낮은 쪽) 예측 모델.
+    """fwd_ret_5d의 alpha 분위(낮은 쪽) 예측 — unique date 70/30 + embargo.
 
-    alpha=0.10 → 하위 10% (90% 신뢰수준 VaR 유사 개념)
-    alpha=0.05 → 하위 5% (95% 신뢰수준)
+    이전 버그: iloc[:70%] 행 분할 → 종목군 분할이라 시간 분할 아니었음.
     """
     df = panel.dropna(subset=FEATS + ["fwd_ret_5d"]).reset_index(drop=True)
     if len(df) < 200:
         return None
-    cut = int(len(df) * 0.7)
-    tr = df.iloc[:cut]
+    dates = np.array(sorted(df["date"].unique()))
+    n_dates = len(dates)
+    if n_dates < 30:
+        tr = df
+    else:
+        cut_idx = int(n_dates * 0.7)
+        train_end_idx = max(cut_idx - QUANTILE_EMBARGO_DAYS, 1)
+        train_dates = dates[:train_end_idx]
+        tr = df[df["date"].isin(train_dates)]
+    if len(tr) < 100:
+        return None
     model = lgb.LGBMRegressor(
         objective="quantile", alpha=alpha,
         num_leaves=31, learning_rate=0.05,

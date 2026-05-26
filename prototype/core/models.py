@@ -8,6 +8,7 @@ from sklearn.metrics import (
 )
 
 from core.config import FEATS
+from core.features import relabel_target_up
 
 
 EMBARGO_DAYS = 5   # fwd_ret_5d 누수 차단용 purge 폭
@@ -23,9 +24,10 @@ def train_models(panel: pd.DataFrame):
       - 현재: unique date 70/30 분할 + 학습 후 EMBARGO_DAYS 제거하여
         train 라벨이 val 첫 5거래일을 참조하지 못하도록 차단.
     """
-    df = panel.dropna(subset=FEATS + ["target_up", "target_crash"]).reset_index(drop=True)
+    # target_up은 아래에서 train 구간 q70으로 재계산 — dropna는 FEATS + crash만으로
+    df = panel.dropna(subset=FEATS + ["target_crash", "fwd_ret_5d"]).reset_index(drop=True)
     if df.empty:
-        raise ValueError("학습 가능한 데이터 없음 (FEATS·target NaN dropna 결과 0행)")
+        raise ValueError("학습 가능한 데이터 없음")
 
     dates = np.array(sorted(df["date"].unique()))
     n_dates = len(dates)
@@ -34,6 +36,9 @@ def train_models(panel: pd.DataFrame):
     train_end_idx = max(cut_idx - EMBARGO_DAYS, 1)
     train_dates = dates[:train_end_idx]
     val_dates = dates[cut_idx:]
+    # target_up 임계값 누수 차단: train 구간 fwd_ret_5d의 q70으로 라벨 재계산
+    df = relabel_target_up(df, df["date"].isin(train_dates))
+    df = df.dropna(subset=["target_up"])  # fwd NaN 행 자동 제외
     tr = df[df["date"].isin(train_dates)]
     va = df[df["date"].isin(val_dates)]
 
@@ -83,7 +88,8 @@ def walk_forward_backtest(panel: pd.DataFrame, n_folds: int = 3, k_top: int = 20
       - 리밸런스: hold_days 간격 (5일 중첩 fwd_ret 컴파운드 버그 회피)
       - 거래비용 cost는 진입+청산 단순 차감
     """
-    df = panel.dropna(subset=FEATS + ["target_up", "target_crash", "fwd_ret_5d"])
+    # target_up은 fold별로 재계산하므로 dropna는 FEATS + crash + fwd만
+    df = panel.dropna(subset=FEATS + ["target_crash", "fwd_ret_5d"])
     df = df.reset_index(drop=True)
     dates = np.array(sorted(df["date"].unique()))
     N = len(dates)
@@ -108,8 +114,11 @@ def walk_forward_backtest(panel: pd.DataFrame, n_folds: int = 3, k_top: int = 20
         train_cut = max(train_end - hold_days, 1)
         train_dates = dates[:train_cut]
         test_dates = dates[test_start:test_end]
-        tr = df[df["date"].isin(train_dates)]
-        te = df[df["date"].isin(test_dates)].copy()
+        # target_up 누수 차단: fold별 train 구간 q70으로 라벨 재계산
+        df_fold = relabel_target_up(df, df["date"].isin(train_dates))
+        df_fold = df_fold.dropna(subset=["target_up"])
+        tr = df_fold[df_fold["date"].isin(train_dates)]
+        te = df_fold[df_fold["date"].isin(test_dates)].copy()
         if len(tr) < 200 or len(te) < 50:
             continue
 
