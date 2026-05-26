@@ -340,10 +340,10 @@ def latest_snapshot(panel):
     snap = df[df["date"]==latest_date].copy()
     return snap, latest_date
 
-def classify(up, risk):
-    if up>=50 and risk<50: return "PRIORITY"
-    if up>=50 and risk>=50: return "HIGH-RISK"
-    if up<50 and risk<50: return "HOLD"
+def classify(up, risk, up_th=50, risk_th=50):
+    if up >= up_th and risk < risk_th: return "PRIORITY"
+    if up >= up_th and risk >= risk_th: return "HIGH-RISK"
+    if up < up_th and risk < risk_th: return "HOLD"
     return "AVOID"
 
 def tag_html(cat):
@@ -372,6 +372,28 @@ if USE_REAL and not _real_available:
     st.error(f"실데이터 파일 없음: {REAL_PANEL_PATH}. 합성 모드로 자동 전환.")
     USE_REAL = False
 
+# -------- 사이드바 고급 설정 (데이터 로드 전 — 슬라이더가 패널 크기·임계값 제어) --------
+with st.sidebar:
+    with st.expander("⚙️ 고급 설정 (인터랙티브)", expanded=False):
+        if not USE_REAL:
+            CFG_N_STOCKS = st.slider("합성 종목 수", 50, 200, 120, step=10,
+                                     help="합성 모드 한정. 늘리면 학습·SHAP 시간 증가.")
+            CFG_N_DAYS = st.slider("합성 일자 수", 300, 1000, 600, step=50,
+                                   help="warmup 25일 제외 후 학습 가능.")
+        else:
+            CFG_N_STOCKS = None
+            CFG_N_DAYS = None
+            st.caption("실데이터 모드: 종목·일자 고정 (99종목 × 1224일)")
+        st.divider()
+        st.caption("**분류 임계값** (2×2 매트릭스)")
+        CFG_UP_TH = st.slider("우선 관심 상승 점수 기준", 30, 80, 50, step=5)
+        CFG_RISK_TH = st.slider("위험 분류 점수 기준", 30, 80, 50, step=5)
+        st.divider()
+        st.caption("**백테스트 파라미터**")
+        CFG_K_TOP = st.slider("리밸런스 picks (k_top)", 5, 50, 20, step=5)
+        CFG_RISK_PCT = st.slider("리스크 필터 분위 (B 전략)", 0.50, 0.95, 0.70, step=0.05)
+        CFG_HOLD = st.slider("보유 일수 (비중첩)", 3, 20, 5, step=1)
+
 if USE_REAL:
     st.markdown(
         "<div class='disclaimer'>⚠️ 실데이터 모드: KOSPI 시총 상위 99종목(2021-01-04 ~ 2025-12-31). "
@@ -381,7 +403,8 @@ if USE_REAL:
     )
 else:
     st.markdown(
-        "<div class='disclaimer'>⚠️ 합성 데이터 모드: GARCH형 패널 (120종목 × 600일). "
+        f"<div class='disclaimer'>⚠️ 합성 데이터 모드: GARCH형 패널 "
+        f"({CFG_N_STOCKS}종목 × {CFG_N_DAYS}일). "
         "실제 매수·매도 추천이 아닙니다. 최종 투자 판단·책임은 사용자에게 있습니다.</div>",
         unsafe_allow_html=True,
     )
@@ -391,7 +414,7 @@ with st.spinner(("실데이터 로드" if USE_REAL else "합성 데이터 생성
     if USE_REAL:
         panel = load_real_panel_bundled()
     else:
-        panel = gen_panel(n_stocks=120, n_days=600)
+        panel = gen_panel(n_stocks=CFG_N_STOCKS, n_days=CFG_N_DAYS)
     panel = inject_disclosure_signals(panel, n_events_per_stock=4)
     panel = make_features(panel)
     m_up, m_cr, metrics = train_models(panel)
@@ -400,7 +423,8 @@ with st.spinner(("실데이터 로드" if USE_REAL else "합성 데이터 생성
     snap["score_cr_p"] = m_cr.predict_proba(snap[FEATS])[:,1]
     snap["score_up"] = (snap["score_up_p"]*100).round(0).astype(int)
     snap["score_risk"] = (snap["score_cr_p"]*100).round(0).astype(int)
-    snap["category"] = snap.apply(lambda r: classify(r["score_up"], r["score_risk"]), axis=1)
+    snap["category"] = snap.apply(
+        lambda r: classify(r["score_up"], r["score_risk"], CFG_UP_TH, CFG_RISK_TH), axis=1)
     # 신뢰도 (간단 휴리스틱: 예측 확률 0.5와의 거리)
     snap["confidence"] = ((snap["score_up_p"]-0.5).abs() + (snap["score_cr_p"]-0.5).abs()).rank(pct=True)
 
@@ -563,10 +587,11 @@ with tab2:
         ax.annotate(name, (r["score_up"], r["score_risk"]),
                     fontsize=8, xytext=(5, 5), textcoords="offset points",
                     fontproperties=KFONT_FP)
-    ax.axhline(50, color="#444", ls="--", lw=1)
-    ax.axvline(50, color="#444", ls="--", lw=1)
+    ax.axhline(CFG_RISK_TH, color="#444", ls="--", lw=1)
+    ax.axvline(CFG_UP_TH, color="#444", ls="--", lw=1)
     ax.set_xlim(0,100); ax.set_ylim(0,100)
-    ax.set_xlabel("Upside Score"); ax.set_ylabel("Risk Score")
+    ax.set_xlabel(f"Upside Score (분류 ≥ {CFG_UP_TH})")
+    ax.set_ylabel(f"Risk Score (위험 ≥ {CFG_RISK_TH})")
     ax.legend(loc="upper left", fontsize=9)
     ax.grid(True, alpha=0.25)
     st.pyplot(fig); plt.close(fig)
@@ -680,9 +705,10 @@ with tab4:
     st.subheader("📈 백테스트: A(상승만) vs B(상승+리스크 필터)")
     st.caption("walk-forward 3-fold · 비중첩 5일 보유 리밸런스 · 거래비용 0.3% (진입+청산)")
 
-    with st.spinner("walk-forward 백테스트 실행 중 (fold별 재학습)..."):
+    with st.spinner(f"walk-forward 백테스트 실행 중 (k_top={CFG_K_TOP}, hold={CFG_HOLD}d, risk_pct={CFG_RISK_PCT})..."):
         ra_s, rb_s, avoided, per_fold = walk_forward_backtest(
-            panel, n_folds=3, k_top=20, hold_days=5, cost=0.003, risk_pct=0.70)
+            panel, n_folds=3, k_top=CFG_K_TOP, hold_days=CFG_HOLD,
+            cost=0.003, risk_pct=CFG_RISK_PCT)
         cum_a = (1 + ra_s).cumprod()
         cum_b = (1 + rb_s).cumprod()
 
