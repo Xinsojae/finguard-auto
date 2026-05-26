@@ -91,8 +91,9 @@ def _render_calendar(ctx: AppCtx) -> None:
     # 가까운 순으로
     c1, c2, c3 = st.columns(3)
     c1.metric("총 이벤트", len(df))
-    c2.metric("D-7 이내", int((df["예정일"] <= (date(2026, 5, 27) +
-                                         pd.Timedelta(days=7)).date()).sum()))
+    from datetime import timedelta as _td
+    cutoff = date.today() + _td(days=7)
+    c2.metric("D-7 이내", int((df["예정일"] <= cutoff).sum()))
     c3.metric("D-30 이내", len(df))
     st.divider()
     st.dataframe(df, use_container_width=True, hide_index=True)

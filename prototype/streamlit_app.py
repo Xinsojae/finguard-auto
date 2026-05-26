@@ -5,9 +5,11 @@
     streamlit run streamlit_app.py
 
 구조:
-    streamlit_app.py       → 페이지 설정 + 사이드바 + 데이터 로드 + 탭 dispatch
-    core/                  → 데이터·피처·모델·UI 유틸 (재사용 가능)
-    tabs/                  → 5개 탭별 render() (개별 모듈)
+    streamlit_app.py       → 페이지 설정 + CSS + 사이드바 + 데이터 로드 + 탭 dispatch
+    core/                  → 14개 모듈: config·data·features·models·anomaly·confidence
+                              ·mocks·paper_trading·plotly_theme·portfolio·quantile_risk
+                              ·risk·tour·ui·ui_kit
+    tabs/                  → 11개 탭별 render(ctx: AppCtx)
     disclosure_analyzer.py → 30유형 룰베이스 공시 분류
     news_sentiment.py      → TF-IDF + KR-FinBERT 뉴스 감성
     font_setup.py          → 한글 폰트 (번들 NanumGothic)
@@ -596,7 +598,7 @@ ctx = AppCtx(
 t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, t11 = st.tabs([
     "🎯 종목 분석", "🗺️ 매트릭스", "🔄 비교", "📰 공시·뉴스",
     "📈 백테스트", "🔍 공시 분석기", "💼 모의투자", "📊 포트폴리오",
-    "🧪 AI Lab", "🛠️ 운영", "🏢 사업·운영",
+    "🧪 AI Lab", "🛠️ MLOps", "🏢 사업·운영",
 ])
 with t1: tab_stocks.render(ctx)
 with t2: tab_matrix.render(ctx)

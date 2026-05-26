@@ -213,7 +213,7 @@ def mlflow_mock_experiments() -> pd.DataFrame:
 # ============================================================
 def event_calendar_mock(snap, n: int = 12) -> pd.DataFrame:
     """다가오는 이벤트 mock — snap 종목 일부에 배정."""
-    today = date(2026, 5, 27)
+    today = date.today()
     rng = random.Random(20260527)
     event_types = [
         ("📅 정기보고서 제출", "INFO_QUARTER"),
@@ -247,7 +247,7 @@ def event_calendar_mock(snap, n: int = 12) -> pd.DataFrame:
 # ============================================================
 def weekly_report_html(snap, ra_summary: dict = None) -> str:
     """주간 리스크 리포트 HTML (mock)."""
-    today = date(2026, 5, 27)
+    today = date.today()
     week_start = today - timedelta(days=6)
     n_priority = int((snap["category"] == "PRIORITY").sum())
     n_avoid = int((snap["category"] == "AVOID").sum())
@@ -321,8 +321,7 @@ def generate_alerts(snap) -> List[dict]:
     # D-7 이내 캘린더 이벤트 통합
     try:
         cal = event_calendar_mock(snap, n=12)
-        from datetime import date, timedelta
-        today = date(2026, 5, 27)
+        today = date.today()
         soon = cal[cal["예정일"] <= today + timedelta(days=7)]
         for _, e in soon.head(3).iterrows():
             d = (e["예정일"] - today).days
@@ -405,17 +404,24 @@ def conformal_interval(score_up_p: float, n_calibration: int = 500,
 # ============================================================
 # 11. Permutation Importance (실제 sklearn, 빠른 1-shot)
 # ============================================================
-def permutation_importance_quick(model, panel, feats: list,
+import streamlit as _st  # 캐싱용 (모듈 전역 1회)
+
+
+@_st.cache_data(show_spinner=False)
+def permutation_importance_quick(_model, panel, feats: list,
                                  target_col: str = "target_up",
                                  n_repeats: int = 3, max_rows: int = 5000) -> pd.DataFrame:
-    """sklearn.permutation_importance 단축 버전 — 검증셋 일부만 사용."""
+    """sklearn.permutation_importance 단축 버전 — 검증셋 일부만 사용.
+
+    _model은 leading underscore → Streamlit이 hashing 건너뜀 (모델 객체는 해시 불가).
+    """
     from sklearn.inspection import permutation_importance
     df = panel.dropna(subset=feats + [target_col])
     if len(df) > max_rows:
         df = df.tail(max_rows)
     X, y = df[feats], df[target_col]
     try:
-        r = permutation_importance(model, X, y, n_repeats=n_repeats,
+        r = permutation_importance(_model, X, y, n_repeats=n_repeats,
                                    random_state=42, n_jobs=1)
         out = pd.DataFrame({
             "feature": feats,
@@ -430,7 +436,8 @@ def permutation_importance_quick(model, panel, feats: list,
 # ============================================================
 # 12. ALE Plot (단일 피처 1D, 실제 계산)
 # ============================================================
-def ale_1d(model, panel, feat: str, all_feats: list,
+@_st.cache_data(show_spinner=False)
+def ale_1d(_model, panel, feat: str, all_feats: list,
            target_col: str = "target_up", n_bins: int = 20,
            max_rows: int = 3000) -> pd.DataFrame:
     """1D Accumulated Local Effects — 단일 피처 변경 시 예측 변화."""
@@ -446,7 +453,7 @@ def ale_1d(model, panel, feat: str, all_feats: list,
     for v in grid:
         X = df[all_feats].copy()
         X[feat] = v
-        pred = model.predict_proba(X)[:, 1].mean()
+        pred = _model.predict_proba(X)[:, 1].mean()
         rows.append({"grid_value": v, "predicted_prob": pred})
     out = pd.DataFrame(rows)
     # ALE는 centered effect — 평균 차감

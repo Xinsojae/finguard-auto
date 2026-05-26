@@ -1,7 +1,7 @@
-"""각 탭 모듈은 render(ctx) 함수를 export한다.
+"""각 탭 모듈은 render(ctx: AppCtx) 함수를 export한다.
 
-ctx는 streamlit_app.py가 만든 단일 dict — 패널, 모델, 스냅샷,
-사이드바 설정값 등을 모두 담는다.
+AppCtx는 streamlit_app.py가 만든 dataclass — 패널, 모델, 스냅샷,
+사이드바 설정값(임계값·k_top·hold·risk_pct), 폰트 객체를 담는다.
 """
 from dataclasses import dataclass
 from typing import List, Optional, Any

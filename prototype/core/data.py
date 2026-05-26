@@ -1,4 +1,11 @@
-"""패널 데이터 생성·로드·공시 주입."""
+"""패널 데이터 생성·로드·공시 주입.
+
+주요 함수:
+    gen_panel(n_stocks, n_days)        → GARCH 합성 패널
+    load_real_panel_bundled()          → KOSPI 99종목 실데이터 pkl 로드
+    inject_disclosure_signals(panel)   → 룰베이스 공시 분류 결과 주입
+    latest_snapshot(panel)             → 최신 일자 스냅샷
+"""
 import json
 import numpy as np
 import pandas as pd
