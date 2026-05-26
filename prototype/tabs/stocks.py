@@ -183,9 +183,10 @@ def _render_disclosure_card(panel, row) -> None:
         color = ("#E57373" if risk_val < 0
                  else "#34D399" if risk_val > 0 else "#94A3B8")
         st.markdown(
-            f"<div style='border-left:4px solid {color};padding:10px 14px;"
+            f"<div style='padding:10px 14px 10px 18px;"
             f"margin:6px 0;background:var(--bg-elevated);"
             f"border:1px solid var(--border-subtle);"
+            f"border-left:4px solid {color};"
             f"border-radius:8px;'>"
             f"<b style='color:var(--text-primary);'>{d['date'].date()}</b> "
             f"<span style='color:var(--text-muted);'>·</span> "
