@@ -21,31 +21,11 @@ import streamlit as st
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
-from matplotlib import font_manager
 import lightgbm as lgb
 from sklearn.metrics import roc_auc_score, average_precision_score
 
-# -------- 한글 폰트 (Streamlit Cloud: fonts-nanum, Windows: 맑은고딕) --------
-_KFONT_CANDIDATES = [
-    "/usr/share/fonts/truetype/nanum/NanumGothic.ttf",
-    "/usr/share/fonts/truetype/nanum/NanumBarunGothic.ttf",
-    "/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc",
-    "/usr/share/fonts/truetype/noto/NotoSansCJK-Regular.ttc",
-    "C:/Windows/Fonts/malgun.ttf",
-    "/System/Library/Fonts/AppleSDGothicNeo.ttc",
-]
-KFONT_PATH = None
-KFONT_FP = None
-for _f in _KFONT_CANDIDATES:
-    if os.path.exists(_f):
-        font_manager.fontManager.addfont(_f)
-        _name = font_manager.FontProperties(fname=_f).get_name()
-        plt.rcParams["font.family"] = "sans-serif"
-        plt.rcParams["font.sans-serif"] = [_name] + plt.rcParams["font.sans-serif"]
-        KFONT_PATH = _f
-        KFONT_FP = font_manager.FontProperties(fname=_f)
-        break
-plt.rcParams["axes.unicode_minus"] = False
+# 한글 폰트 등록 (import만 해도 matplotlib rcParams 설정됨)
+from font_setup import KFONT_FP, KFONT_PATH  # noqa: F401
 
 # -------- 스타일 --------
 st.set_page_config(page_title="FinGuard Auto", page_icon="🛡️", layout="wide")
