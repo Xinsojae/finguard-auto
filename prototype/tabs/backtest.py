@@ -2,7 +2,7 @@
 import numpy as np
 import pandas as pd
 import streamlit as st
-import matplotlib.pyplot as plt
+import plotly.graph_objects as go
 
 from core.models import walk_forward_backtest
 from tabs import AppCtx
@@ -36,25 +36,38 @@ def render(ctx: AppCtx) -> None:
 
 
 def _render_curve(cum_a, cum_b, per_fold) -> None:
-    fig, ax = plt.subplots(figsize=(10, 4.2))
-    ax.plot(cum_a.index, cum_a.values, color="#E57373", lw=1.6,
-            label=f"A: 상승만 (누적 {cum_a.iloc[-1] - 1:+.1%})")
-    ax.plot(cum_b.index, cum_b.values, color="#81C784", lw=1.6,
-            label=f"B: 상승+리스크 필터 (누적 {cum_b.iloc[-1] - 1:+.1%})")
-    ax.axhline(1.0, color="#BDBDBD", ls="--", lw=0.8)
+    fig = go.Figure()
+    fig.add_trace(go.Scatter(
+        x=cum_a.index, y=cum_a.values, mode="lines",
+        name=f"A: 상승만 (누적 {cum_a.iloc[-1] - 1:+.1%})",
+        line=dict(color="#E57373", width=2),
+        hovertemplate="%{x|%Y-%m-%d}<br>누적: %{y:.3f}<extra></extra>",
+    ))
+    fig.add_trace(go.Scatter(
+        x=cum_b.index, y=cum_b.values, mode="lines",
+        name=f"B: 상승+리스크 필터 (누적 {cum_b.iloc[-1] - 1:+.1%})",
+        line=dict(color="#81C784", width=2),
+        hovertemplate="%{x|%Y-%m-%d}<br>누적: %{y:.3f}<extra></extra>",
+    ))
+    fig.add_hline(y=1.0, line_dash="dash", line_color="#BDBDBD", line_width=1)
     for rec in per_fold[1:]:
-        ax.axvline(pd.Timestamp(rec["test_start"]),
-                   color="#90A4AE", ls=":", lw=0.8, alpha=0.5)
-    ax.set_title("Cumulative Return (walk-forward, non-overlapping 5d hold)",
-                 color="#424242")
-    ax.set_ylabel("Cumulative Asset (start=1.0)", color="#666")
-    ax.tick_params(colors="#666")
-    for sp in ax.spines.values():
-        sp.set_color("#E0E0E0")
-    ax.legend(loc="best", frameon=False)
-    ax.grid(True, alpha=0.15)
-    plt.tight_layout()
-    st.pyplot(fig); plt.close(fig)
+        fig.add_vline(x=pd.Timestamp(rec["test_start"]),
+                      line_dash="dot", line_color="#90A4AE",
+                      line_width=1, opacity=0.5)
+    fig.update_layout(
+        height=400, hovermode="x unified",
+        title=dict(text="Cumulative Return (walk-forward, 5d non-overlap)",
+                   font=dict(color="#424242", size=14)),
+        xaxis=dict(rangeslider=dict(visible=True, thickness=0.05),
+                   gridcolor="#F0F0F0"),
+        yaxis=dict(title="누적 자산 (start=1.0)", gridcolor="#F0F0F0"),
+        legend=dict(orientation="h", yanchor="bottom", y=1.02,
+                    xanchor="left", x=0),
+        margin=dict(l=10, r=10, t=50, b=10),
+        plot_bgcolor="white", paper_bgcolor="white",
+        font=dict(family="Malgun Gothic, sans-serif", color="#555"),
+    )
+    st.plotly_chart(fig, use_container_width=True)
 
 
 def _render_metrics(ra_s, rb_s, cum_a, cum_b, avoided) -> None:

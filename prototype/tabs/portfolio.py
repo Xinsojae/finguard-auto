@@ -1,6 +1,7 @@
 """Tab 7: 포트폴리오 분석 (§15.2 포트폴리오 화면)."""
 import streamlit as st
-import matplotlib.pyplot as plt
+import plotly.graph_objects as go
+import plotly.express as px
 
 from core.paper_trading import Portfolio
 from core.portfolio import (
@@ -51,20 +52,26 @@ def _render_sector(pf, prices, snap, kfont_fp) -> None:
     weights = [v * 100 for v in sec_dict.values()]
     colors = ["#E57373" if v > 40 else "#FFB74D" if v > 30 else "#81C784"
               for v in weights]
-    fig, ax = plt.subplots(figsize=(8, max(2, len(secs) * 0.4)))
-    ax.barh(secs, weights, color=colors, alpha=0.85)
-    ax.axvline(40, color="#E57373", ls="--", lw=0.8, label="한도 40%")
-    ax.set_xlabel("비중 %", color="#666")
-    ax.tick_params(colors="#666")
-    for sp in ax.spines.values():
-        sp.set_color("#E0E0E0")
-    if kfont_fp is not None:
-        for lbl in ax.get_yticklabels():
-            lbl.set_fontproperties(kfont_fp)
-        ax.set_xlabel("비중 %", fontproperties=kfont_fp)
-    ax.legend()
-    plt.tight_layout()
-    st.pyplot(fig); plt.close(fig)
+    fig = go.Figure(go.Bar(
+        x=weights, y=secs, orientation="h",
+        marker=dict(color=colors, opacity=0.85),
+        text=[f"{v:.1f}%" for v in weights],
+        textposition="outside",
+        hovertemplate="%{y}: %{x:.1f}%<extra></extra>",
+    ))
+    fig.add_vline(x=40, line_dash="dash", line_color="#E57373",
+                  annotation_text="한도 40%", annotation_position="top right")
+    fig.update_layout(
+        height=max(220, len(secs) * 50),
+        xaxis=dict(title="비중 %", gridcolor="#F0F0F0",
+                   range=[0, max(50, max(weights) * 1.15)]),
+        yaxis=dict(gridcolor="#F0F0F0"),
+        margin=dict(l=10, r=10, t=10, b=10),
+        plot_bgcolor="white", paper_bgcolor="white",
+        font=dict(family="Malgun Gothic, sans-serif", color="#555"),
+        showlegend=False,
+    )
+    st.plotly_chart(fig, use_container_width=True)
 
 
 def _render_correlation(panel, snap, held_ids, kfont_fp) -> None:
@@ -74,20 +81,23 @@ def _render_correlation(panel, snap, held_ids, kfont_fp) -> None:
         return
     corr = return_correlation(panel, held_ids, window=60)
     name_map = {str(r["stock_id"]): r["name"] for _, r in snap.iterrows()}
-    corr.index = [name_map.get(str(c), str(c)) for c in corr.index]
-    corr.columns = [name_map.get(str(c), str(c)) for c in corr.columns]
-    fig, ax = plt.subplots(figsize=(7, 5))
-    im = ax.imshow(corr.values, cmap="RdYlGn_r", vmin=-1, vmax=1)
-    ax.set_xticks(range(len(corr.columns)))
-    ax.set_yticks(range(len(corr.index)))
-    ax.set_xticklabels(corr.columns, rotation=45, ha="right")
-    ax.set_yticklabels(corr.index)
-    if kfont_fp is not None:
-        for lbl in ax.get_xticklabels() + ax.get_yticklabels():
-            lbl.set_fontproperties(kfont_fp)
-    plt.colorbar(im, ax=ax, label="상관계수")
-    plt.tight_layout()
-    st.pyplot(fig); plt.close(fig)
+    labels = [name_map.get(str(c), str(c)) for c in corr.columns]
+    fig = go.Figure(go.Heatmap(
+        z=corr.values, x=labels, y=labels,
+        colorscale="RdYlGn_r", zmin=-1, zmax=1,
+        colorbar=dict(title="상관계수"),
+        text=[[f"{v:.2f}" for v in row] for row in corr.values],
+        texttemplate="%{text}", textfont=dict(size=10),
+        hovertemplate="%{x} · %{y}<br>상관: %{z:.2f}<extra></extra>",
+    ))
+    fig.update_layout(
+        height=max(350, 30 * len(labels)),
+        xaxis=dict(tickangle=-45, side="bottom"),
+        margin=dict(l=10, r=10, t=10, b=10),
+        plot_bgcolor="white", paper_bgcolor="white",
+        font=dict(family="Malgun Gothic, sans-serif", color="#555"),
+    )
+    st.plotly_chart(fig, use_container_width=True)
     n = len(corr)
     avg_off_diag = (corr.values.sum() - n) / (n * (n - 1)) if n > 1 else 0
     st.caption(f"평균 상관계수 (대각선 제외): **{avg_off_diag:.2f}** "

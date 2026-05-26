@@ -6,6 +6,7 @@ mocks: HyperCLOVA X, KoBigBird, PatchTST, Whisper, Conformal, OCR.
 import streamlit as st
 import pandas as pd
 import matplotlib.pyplot as plt
+import plotly.graph_objects as go
 
 from core import mocks
 from core.ui_kit import demo_badge, section_header, info_card
@@ -129,25 +130,37 @@ def _render_patchtst(ctx: AppCtx) -> None:
         if fc.empty:
             st.warning("히스토리 부족 (20일 미만)")
             return
-        # 차트
-        fig, ax = plt.subplots(figsize=(9, 3.5))
-        ax.plot(range(-len(hist), 0), hist["close"].values,
-                color="#5B8DEF", lw=1.4, label="과거 종가")
+        past_x = list(range(-len(hist), 0))
         future_x = list(range(1, horizon + 1))
-        ax.plot(future_x, fc["predicted_close"], color="#FFB74D",
-                lw=1.8, marker="o", label="예측 (mock)")
-        ax.fill_between(future_x, fc["lower_80"], fc["upper_80"],
-                        color="#FFB74D", alpha=0.15, label="80% 구간")
-        ax.axvline(0, color="#BDBDBD", ls="--", lw=0.8)
-        ax.set_xlabel("일 (현재=0)", color="#666")
-        ax.set_ylabel("가격 (원)", color="#666")
-        ax.tick_params(colors="#666")
-        for sp in ax.spines.values():
-            sp.set_color("#E0E0E0")
-        ax.legend(loc="best", frameon=False)
-        ax.grid(True, alpha=0.15)
-        plt.tight_layout()
-        st.pyplot(fig); plt.close(fig)
+        fig = go.Figure()
+        fig.add_trace(go.Scatter(
+            x=past_x, y=hist["close"].values, mode="lines",
+            name="과거 종가", line=dict(color="#5B8DEF", width=2),
+        ))
+        fig.add_trace(go.Scatter(
+            x=future_x, y=fc["predicted_close"], mode="lines+markers",
+            name="예측 (mock)", line=dict(color="#FFB74D", width=2),
+            marker=dict(size=8),
+        ))
+        fig.add_trace(go.Scatter(
+            x=future_x + future_x[::-1],
+            y=list(fc["upper_80"]) + list(fc["lower_80"])[::-1],
+            fill="toself", fillcolor="rgba(255,183,77,0.15)",
+            line=dict(color="rgba(0,0,0,0)"),
+            name="80% 구간", showlegend=True, hoverinfo="skip",
+        ))
+        fig.add_vline(x=0, line_dash="dash", line_color="#BDBDBD")
+        fig.update_layout(
+            height=380,
+            xaxis=dict(title="일 (현재=0)", gridcolor="#F0F0F0"),
+            yaxis=dict(title="가격 (원)", gridcolor="#F0F0F0"),
+            margin=dict(l=10, r=10, t=10, b=10),
+            plot_bgcolor="white", paper_bgcolor="white",
+            legend=dict(orientation="h", yanchor="bottom", y=1.02,
+                        xanchor="left", x=0),
+            font=dict(family="Malgun Gothic, sans-serif", color="#555"),
+        )
+        st.plotly_chart(fig, use_container_width=True)
         # 표
         disp = fc.copy()
         for c in ["predicted_close", "lower_80", "upper_80"]:
