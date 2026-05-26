@@ -14,6 +14,7 @@ from core.risk import (
     check_kill_switch, summarize_rules, position_concentration,
     auto_close_check,
 )
+from core.ui_kit import download_csv_button
 from tabs import AppCtx
 
 
@@ -181,6 +182,8 @@ def render(ctx: AppCtx) -> None:
     else:
         st.dataframe(tr_df, use_container_width=True, hide_index=True)
         st.caption(f"총 {len(pf.trades)}건 · 차단된 매수 시도 {pf.blocked_buys}건")
+        download_csv_button(tr_df, "거래내역 CSV 다운로드",
+                            "paper_trades.csv", key="paper_dl_trades")
 
     # ----- 리셋 -----
     st.divider()

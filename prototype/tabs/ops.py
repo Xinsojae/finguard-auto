@@ -7,7 +7,7 @@ import streamlit as st
 import pandas as pd
 
 from core import mocks
-from core.ui_kit import demo_badge, section_header, info_card
+from core.ui_kit import demo_badge, section_header, info_card, download_csv_button
 from tabs import AppCtx
 
 
@@ -48,6 +48,8 @@ def _render_mlflow() -> None:
 
     st.divider()
     st.dataframe(df, use_container_width=True, hide_index=True)
+    download_csv_button(df, "MLflow 실험 로그 CSV 다운로드",
+                        "mlflow_experiments.csv", key="op_dl_mlflow")
     st.caption(
         "실제 MLflow CLI: `mlflow ui --backend-store-uri ./mlruns` → "
         "localhost:5000에서 실험 비교, 파라미터 sweep 결과 시각화. 본 데모는 mock."
@@ -91,6 +93,8 @@ def _render_calendar(ctx: AppCtx) -> None:
     c3.metric("D-30 이내", len(df))
     st.divider()
     st.dataframe(df, use_container_width=True, hide_index=True)
+    download_csv_button(df, "캘린더 CSV 다운로드",
+                        "event_calendar.csv", key="op_dl_cal")
     st.caption("실데이터 연동: OpenDART 공시 일정 API + KRX 휴장일 API. 현재는 mock 12건.")
 
 

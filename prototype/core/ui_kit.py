@@ -70,3 +70,29 @@ def metric_row(metrics: list) -> None:
             col.metric(m[0], m[1], delta=m[2])
         else:
             col.metric(m[0], m[1])
+
+
+def format_won(value: float) -> str:
+    """원·만원·억원 단위 자동 선택."""
+    if value is None:
+        return "-"
+    v = float(value)
+    if abs(v) >= 1e8:
+        return f"{v/1e8:.2f}억원"
+    if abs(v) >= 1e4:
+        return f"{v/1e4:,.0f}만원"
+    return f"{v:,.0f}원"
+
+
+def download_csv_button(df, label: str, filename: str, key: str = None) -> None:
+    """DataFrame → CSV 다운로드 버튼 (BOM 포함, 한글 안전)."""
+    import io
+    buf = io.StringIO()
+    df.to_csv(buf, index=False, encoding="utf-8-sig")
+    st.download_button(
+        label=f"📥 {label}",
+        data=buf.getvalue().encode("utf-8-sig"),
+        file_name=filename,
+        mime="text/csv",
+        key=key,
+    )

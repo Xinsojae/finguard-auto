@@ -38,6 +38,7 @@ from tabs import ai_lab as tab_ai_lab
 from tabs import ops as tab_ops
 from tabs import compare as tab_compare
 from core import mocks
+from core.tour import render_tour_widget
 
 
 # ============================================================
@@ -198,7 +199,8 @@ mkt_risk = int(snap["score_risk"].mean())
 mkt_label = "낮음" if mkt_risk < 35 else "중간" if mkt_risk < 55 else "높음"
 
 with st.sidebar:
-    # ----- 테마 토글 -----
+    # ----- 데모 투어 + 테마 -----
+    render_tour_widget()
     theme_col1, theme_col2 = st.columns([3, 1])
     with theme_col1:
         st.caption("🎨 테마")

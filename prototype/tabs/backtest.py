@@ -5,6 +5,7 @@ import streamlit as st
 import plotly.graph_objects as go
 
 from core.models import walk_forward_backtest
+from core.ui_kit import download_csv_button
 from tabs import AppCtx
 
 
@@ -97,6 +98,8 @@ def _render_fold_table(per_fold) -> None:
     for col in ["A 평균(5일)", "B 평균(5일)"]:
         fold_df[col] = fold_df[col].apply(lambda v: f"{v * 100:+.2f}%")
     st.dataframe(fold_df, use_container_width=True, hide_index=True)
+    download_csv_button(fold_df, "Fold 결과 CSV 다운로드",
+                        "backtest_folds.csv", key="bt_dl_folds")
 
 
 def _render_caveat() -> None:
