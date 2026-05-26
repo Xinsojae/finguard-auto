@@ -10,6 +10,10 @@ from core.paper_trading import (
     place_buy, place_sell, auto_buy_priority,
     positions_dataframe, trades_dataframe,
 )
+from core.risk import (
+    check_kill_switch, summarize_rules, position_concentration,
+    auto_close_check,
+)
 from tabs import AppCtx
 
 
@@ -36,6 +40,22 @@ def render(ctx: AppCtx) -> None:
     total_equity = pf.total_equity(prices)
     total_pnl = pf.total_pnl(prices)
     roi = (total_equity / INITIAL_CASH - 1) * 100
+
+    # ----- 리스크 엔진 + Kill Switch (§12) -----
+    mkt_avg_risk = float(snap["score_risk"].mean())
+    daily_pnl_pct = total_pnl / INITIAL_CASH
+    ks = check_kill_switch(market_avg_risk=mkt_avg_risk,
+                           daily_pnl_pct=daily_pnl_pct)
+    pf.kill_switch_active = ks.active
+    if ks.active:
+        st.error(ks.banner_text())
+    else:
+        st.success(ks.banner_text())
+    with st.expander("📐 리스크 엔진 규칙 (§12.2 + §12.3)", expanded=False):
+        for rule in summarize_rules():
+            st.markdown(f"- {rule}")
+        st.caption(f"현재: 시장 평균 리스크 {mkt_avg_risk:.0f}/100 · "
+                   f"일일 손익 {daily_pnl_pct*100:+.2f}%")
     c1, c2, c3, c4 = st.columns(4)
     c1.metric("초기 자금", f"{INITIAL_CASH:,.0f}원")
     c2.metric("총 평가액", f"{total_equity:,.0f}원",
@@ -108,7 +128,7 @@ def render(ctx: AppCtx) -> None:
     else:
         st.dataframe(pos_df, use_container_width=True, hide_index=True)
 
-    # ----- 리스크 경고 -----
+    # ----- 리스크 경고 (보유 종목 score_risk + 집중도) -----
     risk_warnings = []
     for sid, pos in pf.positions.items():
         if pos.qty == 0:
@@ -122,6 +142,35 @@ def render(ctx: AppCtx) -> None:
         st.warning("⚠️ **보유 종목 리스크 경고**")
         for n, r in risk_warnings:
             st.markdown(f"- **{n}**: 현재 리스크 {r}/100 (매도 검토 권장)")
+    conc = position_concentration(pf.positions, prices, snap)
+    if conc:
+        st.warning("⚠️ **포지션 집중도 경고**")
+        for w in conc:
+            st.markdown(f"- {w}")
+
+    # ----- 자동 청산 검토 (손절·익절·보유만료) -----
+    sell_candidates = []
+    for sid, pos in pf.positions.items():
+        if pos.qty == 0:
+            continue
+        cur = prices.get(sid, pos.avg_price)
+        # days_held: 마지막 BUY 시각 기반 단순 추정 (실시간 dummy = 0일)
+        last_buy = next(
+            (t for t in reversed(pf.trades)
+             if t.side == "BUY" and t.stock_id == sid), None)
+        days_held = 0  # session 안에선 일수 추적 어려움 — 손절/익절만 활성
+        should, reason = auto_close_check(pos.avg_price, cur, days_held)
+        if should:
+            sell_candidates.append((sid, pos, cur, reason))
+    if sell_candidates:
+        st.warning(f"🤖 **자동 청산 검토 ({len(sell_candidates)}건)** — 손절·익절 조건 발생")
+        for sid, pos, cur, reason in sell_candidates:
+            st.markdown(f"- **{pos.name}** {pos.qty}주 @ {cur:,.0f}원 → {reason}")
+        if st.button("🤖 일괄 자동 청산 실행", key="paper_auto_close"):
+            for sid, pos, cur, reason in sell_candidates:
+                place_sell(pf, sid, pos.qty, cur, reason=f"자동: {reason}")
+            st.success(f"{len(sell_candidates)}건 청산 완료")
+            st.rerun()
 
     # ----- 거래내역 -----
     st.divider()
