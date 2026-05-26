@@ -3,7 +3,9 @@ import numpy as np
 import pandas as pd
 import streamlit as st
 import lightgbm as lgb
-from sklearn.metrics import roc_auc_score, average_precision_score
+from sklearn.metrics import (
+    roc_auc_score, average_precision_score, precision_score,
+)
 
 from core.config import FEATS
 
@@ -100,6 +102,21 @@ def walk_forward_backtest(panel: pd.DataFrame, n_folds: int = 3, k_top: int = 20
         te["score_up"] = m_up_k.predict_proba(te[FEATS])[:, 1]
         te["score_cr"] = m_cr_k.predict_proba(te[FEATS])[:, 1]
 
+        # 실험 1·2 — 모델 검증 메트릭 (per-fold)
+        try:
+            up_auc = float(roc_auc_score(te["target_up"], te["score_up"]))
+            up_pr = float(average_precision_score(te["target_up"], te["score_up"]))
+            cr_auc = float(roc_auc_score(te["target_crash"], te["score_cr"]))
+            cr_pr = float(average_precision_score(te["target_crash"], te["score_cr"]))
+            # Top-20% precision
+            top_n = max(int(len(te) * 0.20), 1)
+            top_up = te.nlargest(top_n, "score_up")
+            top_cr = te.nlargest(top_n, "score_cr")
+            up_topk_prec = float(top_up["target_up"].mean())
+            cr_topk_prec = float(top_cr["target_crash"].mean())
+        except Exception:
+            up_auc = up_pr = cr_auc = cr_pr = up_topk_prec = cr_topk_prec = 0.0
+
         fold_a, fold_b, fold_dates = [], [], []
         fold_avoided = 0
         for i in range(0, len(test_dates), hold_days):
@@ -130,6 +147,9 @@ def walk_forward_backtest(panel: pd.DataFrame, n_folds: int = 3, k_top: int = 20
             "n_picks": len(fold_a),
             "A_mean": float(np.mean(fold_a)) if fold_a else 0.0,
             "B_mean": float(np.mean(fold_b)) if fold_b else 0.0,
+            # §13.1·13.2 모델 검증 메트릭
+            "up_auc": up_auc, "up_pr": up_pr, "up_topk_prec": up_topk_prec,
+            "cr_auc": cr_auc, "cr_pr": cr_pr, "cr_topk_prec": cr_topk_prec,
         })
 
     ra_s = pd.Series(rets_a, index=dates_bt)
