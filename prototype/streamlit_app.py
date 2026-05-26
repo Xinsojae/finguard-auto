@@ -617,6 +617,65 @@ with tab3:
         ax.set_title(f"{sel} 뉴스 감성 (60일)", fontproperties=KFONT_FP)
         plt.tight_layout(); st.pyplot(fig); plt.close(fig)
 
+    # ============================================================
+    # 뉴스 텍스트 감성 분석 (NLP 모델)
+    # ============================================================
+    st.divider()
+    st.markdown("### 📝 뉴스 텍스트 감성 분석 (NLP 모델)")
+    st.caption("기획서 MVP #4 베이스라인 (TF-IDF + LogReg) + 확장 옵션 (KR-FinBERT). "
+               "입력 텍스트 → 감성 점수 [-1, +1] 출력.")
+
+    ns_col1, ns_col2 = st.columns([1, 2])
+    with ns_col1:
+        backend_label = st.radio(
+            "NLP 모델",
+            ["TF-IDF + LogReg (베이스라인)", "KR-FinBERT (HuggingFace)"],
+            help="KR-FinBERT는 transformers+torch 필요. Cloud 환경에서 메모리 부족 시 "
+                 "자동으로 TF-IDF로 fallback됩니다.",
+        )
+    with ns_col2:
+        user_text = st.text_area(
+            "분석할 뉴스 텍스트",
+            "당사는 자사주 300만주를 매입하기로 결정하였습니다. "
+            "유통주식 수 감소로 EPS 상승 효과가 기대됩니다.",
+            height=120,
+        )
+
+    if st.button("🔍 감성 분석 실행", type="primary", key="ns_run"):
+        backend_key = "krfinbert" if "KR-FinBERT" in backend_label else "tfidf"
+        with st.spinner(f"{backend_label} 로드 및 분석 중..."):
+            try:
+                import news_sentiment as ns
+                model, err = ns.get_sentiment_model(backend_key)
+                if err:
+                    st.warning(err)
+                texts_in = [t.strip() for t in user_text.split("\n") if t.strip()]
+                if not texts_in:
+                    st.warning("입력 텍스트가 비어 있습니다.")
+                else:
+                    scores = model.analyze(texts_in)
+                    st.markdown(f"**사용 모델**: `{model.label}`")
+                    for t, s in zip(texts_in, scores):
+                        if s > 0.2:
+                            color, tag = "#2E7D32", "🟢 호재"
+                        elif s < -0.2:
+                            color, tag = "#C62828", "🔴 악재"
+                        else:
+                            color, tag = "#9E9E9E", "⚪ 중립"
+                        st.markdown(
+                            f"<div style='border-left:4px solid {color};padding:8px 12px;"
+                            f"margin:6px 0;background:#FAFAFA;border-radius:4px;'>"
+                            f"<b style='color:{color};'>{tag}</b> "
+                            f"<span style='color:{color};font-weight:700;'>score {s:+.3f}</span>"
+                            f"<br><small>{t}</small></div>",
+                            unsafe_allow_html=True,
+                        )
+                    # 모델 메타 정보
+                    with st.expander("ℹ️ 모델 정보"):
+                        st.json(model.info())
+            except Exception as e:
+                st.error(f"감성 분석 실패: {e}")
+
 with tab4:
     st.subheader("📈 백테스트: A(상승만) vs B(상승+리스크 필터)")
     st.caption("walk-forward 3-fold · 비중첩 5일 보유 리밸런스 · 거래비용 0.3% (진입+청산)")
