@@ -212,6 +212,102 @@ def make_features(df):
     df["target_crash"] = (df["fwd_ret_5d"]<-0.05).astype(int)
     return df
 
+@st.cache_data(show_spinner=False)
+def walk_forward_backtest(panel: pd.DataFrame, n_folds: int = 3, k_top: int = 20,
+                          hold_days: int = 5, cost: float = 0.003,
+                          risk_pct: float = 0.70):
+    """Walk-forward 3-fold + 비중첩 5일 리밸런스 백테스트.
+
+    Returns (ra_s, rb_s, avoided_total, per_fold_records):
+        ra_s, rb_s : 5일 보유 비중첩 수익률 시계열 (각 원소 = 5일 평균)
+        avoided_total : 리스크 필터로 제외된 picks 누적
+        per_fold_records : fold별 학습 구간·n_picks·A/B 평균
+
+    설계:
+      - 시작 40%는 항상 train(warmup), 나머지 60%를 n_folds로 분할
+      - fold k의 train = D[:warmup_end + k*fold_len], test = 그 다음 fold_len
+      - 각 fold에서 LightGBM 재학습 → out-of-time 예측
+      - 리밸런스: hold_days(5) 간격으로 picks (일별 picks 중첩 버그 회피)
+      - 거래비용 cost(0.3%)는 진입+청산 단순 차감
+    """
+    df = panel.dropna(subset=FEATS + ["target_up", "target_crash", "fwd_ret_5d"])
+    df = df.reset_index(drop=True)
+    dates = np.array(sorted(df["date"].unique()))
+    N = len(dates)
+    if N < 60:
+        return (pd.Series(dtype=float), pd.Series(dtype=float), 0, [])
+
+    warmup_end = max(int(N * 0.40), 30)
+    remain = N - warmup_end
+    fold_len = max(remain // n_folds, hold_days * 2)
+
+    rets_a, rets_b, dates_bt = [], [], []
+    avoided_total = 0
+    per_fold = []
+
+    for k in range(n_folds):
+        train_end = warmup_end + k * fold_len
+        test_start = train_end
+        test_end = min(train_end + fold_len, N)
+        if test_end - test_start < hold_days + 1:
+            continue
+        train_dates = dates[:train_end]
+        test_dates = dates[test_start:test_end]
+        tr = df[df["date"].isin(train_dates)]
+        te = df[df["date"].isin(test_dates)].copy()
+        if len(tr) < 200 or len(te) < 50:
+            continue
+
+        m_up_k = lgb.LGBMClassifier(
+            objective="binary", num_leaves=31, learning_rate=0.05,
+            n_estimators=300, min_data_in_leaf=200, verbose=-1, random_state=42)
+        m_up_k.fit(tr[FEATS], tr["target_up"])
+        m_cr_k = lgb.LGBMClassifier(
+            objective="binary", num_leaves=31, learning_rate=0.05,
+            n_estimators=300, min_data_in_leaf=200, verbose=-1, random_state=42)
+        m_cr_k.fit(tr[FEATS], tr["target_crash"])
+
+        te["score_up"] = m_up_k.predict_proba(te[FEATS])[:, 1]
+        te["score_cr"] = m_cr_k.predict_proba(te[FEATS])[:, 1]
+
+        fold_a, fold_b, fold_dates = [], [], []
+        fold_avoided = 0
+        # 비중첩 리밸런스
+        for i in range(0, len(test_dates), hold_days):
+            d = test_dates[i]
+            sub = te[te["date"] == d]
+            if len(sub) < k_top * 2:
+                continue
+            a = sub.nlargest(k_top, "score_up")
+            ra = a["fwd_ret_5d"].mean() - cost
+            cr_cut = sub["score_cr"].quantile(risk_pct)
+            sub_lr = sub[sub["score_cr"] <= cr_cut]
+            b = sub_lr.nlargest(k_top, "score_up")
+            fold_avoided += len(set(a["stock_id"]) - set(b["stock_id"]))
+            rb = b["fwd_ret_5d"].mean() - cost if len(b) > 0 else 0.0
+            fold_a.append(float(ra))
+            fold_b.append(float(rb))
+            fold_dates.append(pd.Timestamp(d))
+
+        rets_a.extend(fold_a)
+        rets_b.extend(fold_b)
+        dates_bt.extend(fold_dates)
+        avoided_total += fold_avoided
+        per_fold.append({
+            "fold": k + 1,
+            "train_end": pd.Timestamp(train_dates[-1]).date(),
+            "test_start": pd.Timestamp(test_dates[0]).date(),
+            "test_end": pd.Timestamp(test_dates[-1]).date(),
+            "n_picks": len(fold_a),
+            "A_mean": float(np.mean(fold_a)) if fold_a else 0.0,
+            "B_mean": float(np.mean(fold_b)) if fold_b else 0.0,
+        })
+
+    ra_s = pd.Series(rets_a, index=dates_bt)
+    rb_s = pd.Series(rets_b, index=dates_bt)
+    return ra_s, rb_s, avoided_total, per_fold
+
+
 @st.cache_resource
 def train_models(panel):
     df = panel.dropna(subset=FEATS+["target_up","target_crash"]).reset_index(drop=True)
@@ -523,62 +619,89 @@ with tab3:
 
 with tab4:
     st.subheader("📈 백테스트: A(상승만) vs B(상승+리스크 필터)")
-    st.caption("walk-forward 검증 기간, 수수료/슬리피지 0.3% 반영")
-    # 간단 백테스트 (snap에서 그대로 데모)
-    with st.spinner("백테스트 실행 중..."):
-        df = panel.dropna(subset=FEATS+["target_up","target_crash","fwd_ret_5d"]).reset_index(drop=True)
-        cut = int(len(df)*0.7)
-        va = df.iloc[cut:].copy()
-        va["score_up"] = m_up.predict_proba(va[FEATS])[:,1]
-        va["score_cr"] = m_cr.predict_proba(va[FEATS])[:,1]
-        rets_a, rets_b, dates_bt = [], [], []
-        avoided = 0
-        for d, sub in va.groupby("date"):
-            if len(sub)<60: continue
-            a = sub.nlargest(20, "score_up")
-            ra = a["fwd_ret_5d"].mean() - 0.003
-            cr_cut = sub["score_cr"].quantile(0.70)
-            sub_lr = sub[sub["score_cr"]<=cr_cut]
-            b_filt = sub_lr.nlargest(20, "score_up")
-            avoided += len(set(a["stock_id"]) - set(b_filt["stock_id"]))
-            rb = b_filt["fwd_ret_5d"].mean() - 0.003 if len(b_filt)>0 else 0.0
-            rets_a.append(ra); rets_b.append(rb); dates_bt.append(d)
-        ra_s = pd.Series(rets_a, index=dates_bt)
-        rb_s = pd.Series(rets_b, index=dates_bt)
-        cum_a = (1+ra_s).cumprod(); cum_b = (1+rb_s).cumprod()
+    st.caption("walk-forward 3-fold · 비중첩 5일 보유 리밸런스 · 거래비용 0.3% (진입+청산)")
+
+    with st.spinner("walk-forward 백테스트 실행 중 (fold별 재학습)..."):
+        ra_s, rb_s, avoided, per_fold = walk_forward_backtest(
+            panel, n_folds=3, k_top=20, hold_days=5, cost=0.003, risk_pct=0.70)
+        cum_a = (1 + ra_s).cumprod()
+        cum_b = (1 + rb_s).cumprod()
 
     if len(cum_a) == 0:
         st.warning(
-            "백테스트 가능한 날짜 그룹이 없습니다. 패널 크기가 너무 작아 "
-            "일별 종목 수가 60개 미만일 가능성이 큽니다. "
-            "사이드바에서 n_stocks/n_days를 늘려보세요."
+            "백테스트 가능한 fold가 없습니다. 패널 크기가 너무 작거나 "
+            "일별 종목 수가 부족할 수 있습니다 (k_top×2 = 40 미만)."
         )
     else:
+        # ----- 누적 곡선 -----
         fig, ax = plt.subplots(figsize=(10, 4.5))
-        ax.plot(cum_a.index, cum_a.values, color="#C62828", lw=1.5,
-                label=f"A: 상승만 (누적 {cum_a.iloc[-1]-1:+.1%})")
-        ax.plot(cum_b.index, cum_b.values, color="#2E7D32", lw=1.5,
-                label=f"B: 상승+리스크 필터 (누적 {cum_b.iloc[-1]-1:+.1%})")
+        ax.plot(cum_a.index, cum_a.values, color="#C62828", lw=1.6,
+                label=f"A: 상승만 (누적 {cum_a.iloc[-1] - 1:+.1%})")
+        ax.plot(cum_b.index, cum_b.values, color="#2E7D32", lw=1.6,
+                label=f"B: 상승+리스크 필터 (누적 {cum_b.iloc[-1] - 1:+.1%})")
         ax.axhline(1.0, color="#999", ls="--", lw=0.8)
-        ax.set_title("Cumulative Return")
+        # fold 경계선
+        for rec in per_fold[1:]:
+            ax.axvline(pd.Timestamp(rec["test_start"]), color="#1565C0",
+                       ls=":", lw=0.8, alpha=0.6)
+        ax.set_title("Cumulative Return (walk-forward, non-overlapping 5d hold)")
         ax.set_ylabel("Cumulative Asset (start=1.0)")
-        ax.legend(); ax.grid(True, alpha=0.3)
-        plt.tight_layout(); st.pyplot(fig); plt.close(fig)
+        ax.legend(loc="best")
+        ax.grid(True, alpha=0.3)
+        plt.tight_layout()
+        st.pyplot(fig); plt.close(fig)
 
+        # ----- 메트릭 -----
         c1, c2, c3, c4 = st.columns(4)
-        c1.metric("A 평균 수익률", f"{ra_s.mean()*100:.2f}%/주")
-        c2.metric("B 평균 수익률", f"{rb_s.mean()*100:.2f}%/주")
-        c3.metric("A MDD", f"{(cum_a/cum_a.cummax()-1).min()*100:.1f}%")
-        c4.metric("리스크 필터 회피 후보", f"{avoided:,}")
+        c1.metric("A 5일 평균 수익률", f"{ra_s.mean() * 100:+.2f}%")
+        c2.metric("B 5일 평균 수익률", f"{rb_s.mean() * 100:+.2f}%")
+        c3.metric("A MDD", f"{(cum_a / cum_a.cummax() - 1).min() * 100:.1f}%")
+        c4.metric("리스크 필터 회피 picks", f"{avoided:,}")
 
+        c5, c6, c7, c8 = st.columns(4)
+        c5.metric("총 리밸런스 횟수", f"{len(ra_s)}")
+        c6.metric("A 승률", f"{(ra_s > 0).mean() * 100:.1f}%")
+        c7.metric("B 승률", f"{(rb_s > 0).mean() * 100:.1f}%")
+        sharpe_a = ra_s.mean() / (ra_s.std() + 1e-9) * np.sqrt(52)
+        c8.metric("A Sharpe (연환산)", f"{sharpe_a:.2f}")
+
+        # ----- fold별 표 -----
+        st.divider()
+        st.markdown("**🧩 Walk-forward fold별 결과**")
+        fold_df = pd.DataFrame(per_fold)
+        fold_df = fold_df.rename(columns={
+            "fold": "Fold", "train_end": "Train 종료",
+            "test_start": "Test 시작", "test_end": "Test 종료",
+            "n_picks": "리밸런스 횟수",
+            "A_mean": "A 평균(5일)", "B_mean": "B 평균(5일)",
+        })
+        for col in ["A 평균(5일)", "B 평균(5일)"]:
+            fold_df[col] = fold_df[col].apply(lambda v: f"{v * 100:+.2f}%")
+        st.dataframe(fold_df, use_container_width=True, hide_index=True)
+
+    # ----- caveat -----
     st.divider()
-    st.markdown("**📝 해석**")
-    st.info(
-        "본 합성 데이터에서는 급락 모델의 신호가 약해(ROC-AUC ~0.58) 리스크 필터(B)가 A 대비 "
-        "유의미한 개선을 보이지 못했습니다. **실제 데이터에서는 KF-DeBERTa 기반 뉴스·공시 "
-        "감성·이벤트 피처를 추가하면 급락 신호가 강화되어 B가 A를 상회할 것으로 가설**합니다. "
-        "이 결과는 발표에서 '솔직한 베이스라인 + 개선 방향'으로 제시할 수 있는 honest finding입니다."
+    st.warning(
+        "📐 **방법론 caveat**\n\n"
+        "- **walk-forward 3-fold**: 시작 40%를 warmup, 나머지 60%를 3분할. fold별 재학습 → out-of-time 평가.\n"
+        "- **비중첩 5일 보유**: 5거래일마다 리밸런스. 이전 합성 코드의 *일별 picks를 일별 컴파운드*하던 버그(5일 중첩 fwd_ret) 수정.\n"
+        "- **거래비용**: 진입+청산 단순 0.3% 차감. 슬리피지·시장충격·세금 미반영.\n"
+        "- **kill-switch 미적용**: 손절(-3%)·익절(+5%)·일일 손실 한도 미시뮬레이션 (기획서 §12 확장)."
     )
+
+    st.markdown("**📝 해석**")
+    if USE_REAL:
+        st.info(
+            "**실데이터 모드**: KOSPI 99종목 / 2021~2025 / NLP 피처는 룰베이스 공시 분류만 주입 "
+            "(KF-DeBERTa 뉴스·공시 모델은 확장 계획). 급락 모델 ROC-AUC는 합성 0.58 → 실 0.63 개선 "
+            "확인됨. B(리스크 필터)가 A를 상회하는 정도는 fold별 변동성이 큽니다."
+        )
+    else:
+        st.info(
+            "**합성 데이터 모드**: GARCH형 패널. 급락 신호가 약해(ROC-AUC ~0.58) 리스크 필터(B)가 "
+            "A 대비 유의미한 개선을 보이지 못할 수 있습니다. **실데이터 모드 + KF-DeBERTa 추가 시 "
+            "B가 A를 상회할 것으로 가설**합니다. 발표에서 '솔직한 베이스라인 + 개선 방향'으로 제시 가능."
+        )
 
 # ============================================================================
 # Tab 5: 공시 분석기 (NEW)
