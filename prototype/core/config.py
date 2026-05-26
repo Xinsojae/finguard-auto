@@ -401,6 +401,222 @@ hr {
 .stAlert {
   border-radius: var(--radius);
   border: 1px solid var(--border-subtle);
+  background: var(--bg-elevated);
 }
+
+/* ============================================================
+   라이트 모드 위젯 프리미엄 보정
+   ============================================================ */
+
+/* ---- Multiselect / Selectbox (사이드바·본문) ---- */
+.stMultiSelect [data-baseweb="select"] > div,
+.stSelectbox [data-baseweb="select"] > div {
+  background: var(--bg-card) !important;
+  border: 1px solid var(--border-default) !important;
+  border-radius: var(--radius-sm) !important;
+  color: var(--text-primary) !important;
+  transition: all var(--dur) var(--ease);
+  min-height: 38px;
+}
+.stMultiSelect [data-baseweb="select"]:hover > div,
+.stSelectbox [data-baseweb="select"]:hover > div {
+  border-color: var(--border-strong) !important;
+}
+.stMultiSelect [data-baseweb="select"]:focus-within > div,
+.stSelectbox [data-baseweb="select"]:focus-within > div {
+  border-color: var(--accent) !important;
+  box-shadow: 0 0 0 3px var(--accent-glow) !important;
+}
+
+/* 선택된 multiselect 태그 (chip) — 라이트 */
+[data-baseweb="tag"] {
+  background: var(--accent-soft) !important;
+  border: 1px solid rgba(37, 99, 235, 0.2) !important;
+  color: var(--accent) !important;
+  font-weight: 500 !important;
+  border-radius: 6px !important;
+}
+[data-baseweb="tag"] span,
+[data-baseweb="tag"] div { color: var(--accent) !important; }
+[data-baseweb="tag"] svg { fill: var(--accent) !important; }
+
+/* 드롭다운 옵션 리스트 (popover) */
+[data-baseweb="popover"] [data-baseweb="menu"] {
+  background: var(--bg-card) !important;
+  border: 1px solid var(--border-subtle) !important;
+  border-radius: var(--radius) !important;
+  box-shadow: var(--shadow-lg) !important;
+}
+[data-baseweb="popover"] [role="option"] {
+  color: var(--text-primary) !important;
+  font-size: 0.92em;
+  padding: 8px 12px !important;
+}
+[data-baseweb="popover"] [role="option"]:hover {
+  background: var(--accent-soft) !important;
+  color: var(--accent) !important;
+}
+
+/* 드롭다운 화살표 SVG */
+[data-baseweb="select"] svg {
+  fill: var(--text-muted) !important;
+}
+
+/* multiselect 내부 검색 input */
+.stMultiSelect input, .stSelectbox input {
+  background: transparent !important;
+  color: var(--text-primary) !important;
+  caret-color: var(--accent) !important;
+}
+
+/* ---- Tab 좌우 스크롤 버튼 ---- */
+.stTabs [data-baseweb="tab-list"] button:not([role="tab"]),
+.stTabs button[data-testid="stTabsScrollButton"],
+button[data-testid="stTabsScrollButton"],
+[data-testid="stTabsScrollButtonContainer"] button {
+  background: var(--bg-card) !important;
+  color: var(--text-secondary) !important;
+  border: 1px solid var(--border-subtle) !important;
+  border-radius: var(--radius-sm) !important;
+  transition: all var(--dur) var(--ease) !important;
+}
+.stTabs [data-baseweb="tab-list"] button:not([role="tab"]):hover,
+.stTabs button[data-testid="stTabsScrollButton"]:hover,
+button[data-testid="stTabsScrollButton"]:hover,
+[data-testid="stTabsScrollButtonContainer"] button:hover {
+  background: var(--accent-soft) !important;
+  color: var(--accent) !important;
+  border-color: var(--accent) !important;
+}
+.stTabs [data-baseweb="tab-list"] button svg,
+button[data-testid="stTabsScrollButton"] svg {
+  fill: currentColor !important;
+}
+
+/* ---- Number input -/+ stepper ---- */
+.stNumberInput button,
+[data-testid="stNumberInput"] button,
+[data-testid="stNumberInputStepDown"],
+[data-testid="stNumberInputStepUp"] {
+  background: var(--bg-elevated) !important;
+  border: 1px solid var(--border-subtle) !important;
+  color: var(--text-secondary) !important;
+  transition: all var(--dur) var(--ease) !important;
+}
+.stNumberInput button:hover,
+[data-testid="stNumberInputStepDown"]:hover,
+[data-testid="stNumberInputStepUp"]:hover {
+  background: var(--accent-soft) !important;
+  border-color: var(--accent) !important;
+  color: var(--accent) !important;
+}
+.stNumberInput button svg,
+[data-testid="stNumberInputStepDown"] svg,
+[data-testid="stNumberInputStepUp"] svg {
+  fill: currentColor !important;
+}
+
+/* ---- Primary 버튼 글씨 화이트 보장 ---- */
+.stButton button[kind="primary"],
+.stButton button[kind="primary"] *,
+[data-testid="baseButton-primary"],
+[data-testid="baseButton-primary"] * {
+  color: #FFFFFF !important;
+}
+
+/* ---- Secondary 버튼 — 라이트 정련 ---- */
+.stButton button:not([kind="primary"]) {
+  background: var(--bg-card) !important;
+  border: 1px solid var(--border-default) !important;
+  color: var(--text-primary) !important;
+}
+.stButton button:not([kind="primary"]):hover {
+  background: var(--accent-soft) !important;
+  color: var(--accent) !important;
+  border-color: var(--accent) !important;
+}
+
+/* ---- Download 버튼 — secondary 톤 ---- */
+[data-testid="stDownloadButton"] button,
+.stDownloadButton button {
+  background: var(--bg-card) !important;
+  border: 1px solid var(--border-default) !important;
+  color: var(--text-primary) !important;
+  transition: all var(--dur) var(--ease) !important;
+}
+[data-testid="stDownloadButton"] button:hover,
+.stDownloadButton button:hover {
+  background: var(--accent-soft) !important;
+  color: var(--accent) !important;
+  border-color: var(--accent) !important;
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-sm);
+}
+
+/* ---- Radio (AI Lab/운영 sub-nav) ---- */
+.stRadio label, .stRadio div { color: var(--text-primary) !important; }
+.stRadio [data-baseweb="radio"] div[role="radiogroup"] label {
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  padding: 6px 14px;
+  transition: all var(--dur) var(--ease);
+}
+.stRadio [data-baseweb="radio"] div[role="radiogroup"] label:hover {
+  background: var(--accent-soft);
+  border-color: var(--accent);
+}
+
+/* ---- 슬라이더 ---- */
+.stSlider [data-baseweb="slider"] [role="slider"] {
+  background: var(--accent) !important;
+  border: 2px solid #FFFFFF !important;
+  box-shadow: 0 1px 3px var(--accent-glow);
+}
+.stSlider [data-baseweb="slider"] > div > div:first-child > div {
+  background: var(--accent) !important;
+}
+
+/* ---- Toggle 스위치 ---- */
+.stCheckbox [data-baseweb="checkbox"] span:first-child {
+  border-radius: 4px;
+  border-color: var(--border-default) !important;
+}
+[data-baseweb="toggle"] {
+  filter: saturate(0.85);
+}
+
+/* ---- Sidebar 메트릭 정렬 ---- */
+[data-testid="stSidebar"] .stMetric {
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  padding: 10px 12px !important;
+  margin-bottom: 6px;
+  transition: all var(--dur) var(--ease);
+}
+[data-testid="stSidebar"] .stMetric:hover {
+  border-color: var(--border-default);
+  box-shadow: var(--shadow-sm);
+}
+
+/* ---- File uploader ---- */
+[data-testid="stFileUploader"] section {
+  background: var(--bg-elevated) !important;
+  border: 2px dashed var(--border-default) !important;
+  border-radius: var(--radius) !important;
+  transition: all var(--dur) var(--ease);
+}
+[data-testid="stFileUploader"] section:hover {
+  border-color: var(--accent) !important;
+  background: var(--accent-soft) !important;
+}
+
+/* ---- Spinner ---- */
+.stSpinner > div { border-color: var(--accent) transparent var(--accent) transparent !important; }
+
+/* ---- Progress bar ---- */
+.stProgress > div > div > div { background: var(--accent) !important; }
+.stProgress > div > div { background: var(--bg-subtle) !important; }
 </style>
 """
