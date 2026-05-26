@@ -298,7 +298,7 @@ def weekly_report_html(snap, ra_summary: dict = None) -> str:
 # 8. 알림 (st.toast 메시지 생성)
 # ============================================================
 def generate_alerts(snap) -> List[dict]:
-    """리스크 60+ 종목, 우선관심 신규, Kill Switch 등 알림 묶음."""
+    """리스크 60+ 종목, 우선관심 신규, Kill Switch, 임박 이벤트 알림 묶음."""
     alerts = []
     high_risk = snap[snap["score_risk"] >= 60].nlargest(3, "score_risk")
     for _, r in high_risk.iterrows():
@@ -318,7 +318,63 @@ def generate_alerts(snap) -> List[dict]:
             "icon": "🛑",
             "msg": f"시장 평균 리스크 {mkt:.0f} — Kill Switch 활성 권장",
         })
+    # D-7 이내 캘린더 이벤트 통합
+    try:
+        cal = event_calendar_mock(snap, n=12)
+        from datetime import date, timedelta
+        today = date(2026, 5, 27)
+        soon = cal[cal["예정일"] <= today + timedelta(days=7)]
+        for _, e in soon.head(3).iterrows():
+            d = (e["예정일"] - today).days
+            alerts.append({
+                "icon": "📅",
+                "msg": f"D-{d} {e['종목']} {e['이벤트']}",
+            })
+    except Exception:
+        pass
     return alerts
+
+
+# ============================================================
+# 14. 데이터 품질 진단 (실 panel 분석)
+# ============================================================
+def data_quality_report(panel) -> dict:
+    """panel 결측·이상치·기간·종목 요약 (§9.2)."""
+    if panel.empty:
+        return {"empty": True}
+    n_rows = len(panel)
+    n_stocks = panel["stock_id"].nunique()
+    n_days = panel["date"].nunique()
+    date_min = panel["date"].min()
+    date_max = panel["date"].max()
+    missing = panel.isna().sum()
+    missing_rate = (missing / n_rows * 100).round(3)
+    # 가격 이상치: 0 이하 또는 일일 변동률 30% 초과
+    bad_price = int((panel["close"] <= 0).sum()) if "close" in panel.columns else 0
+    if "return" in panel.columns:
+        bad_return = int((panel["return"].abs() > 0.30).sum())
+    else:
+        bad_return = 0
+    # 종목별 데이터 수 분포 (생존편향 체크)
+    per_stock = panel.groupby("stock_id").size()
+    stock_min = int(per_stock.min())
+    stock_max = int(per_stock.max())
+    stock_median = int(per_stock.median())
+    return {
+        "empty": False,
+        "n_rows": n_rows,
+        "n_stocks": n_stocks,
+        "n_days": n_days,
+        "date_min": date_min,
+        "date_max": date_max,
+        "missing": missing.to_dict(),
+        "missing_rate": missing_rate.to_dict(),
+        "bad_price": bad_price,
+        "bad_return": bad_return,
+        "stock_min_rows": stock_min,
+        "stock_max_rows": stock_max,
+        "stock_median_rows": stock_median,
+    }
 
 
 # ============================================================

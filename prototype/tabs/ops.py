@@ -21,7 +21,8 @@ def render(ctx: AppCtx) -> None:
 
     sub = st.radio(
         "운영 모듈",
-        ["📊 MLflow 실험 추적", "📅 이벤트 캘린더", "📝 주간 리스크 리포트"],
+        ["📊 MLflow 실험 추적", "📅 이벤트 캘린더",
+         "📝 주간 리스크 리포트", "🧪 데이터 품질 (§9.2)"],
         horizontal=True,
     )
 
@@ -31,6 +32,8 @@ def render(ctx: AppCtx) -> None:
         _render_calendar(ctx)
     elif sub.startswith("📝"):
         _render_report(ctx)
+    elif sub.startswith("🧪"):
+        _render_quality(ctx)
 
 
 # ============================================================
@@ -121,3 +124,65 @@ def _render_report(ctx: AppCtx) -> None:
     )
     with st.expander("리포트 미리보기 (HTML 렌더링)"):
         st.components.v1.html(html, height=700, scrolling=True)
+
+
+# ============================================================
+def _render_quality(ctx: AppCtx) -> None:
+    section_header("데이터 품질 진단",
+                   "기획서 §9.2 — 결측·이상치·생존편향 점검. 현재 로드된 panel 기준.",
+                   icon="🧪")
+    rep = mocks.data_quality_report(ctx.panel)
+    if rep.get("empty"):
+        st.warning("패널 비어있음.")
+        return
+
+    c1, c2, c3, c4 = st.columns(4)
+    c1.metric("총 행 수", f"{rep['n_rows']:,}")
+    c2.metric("종목 수", rep["n_stocks"])
+    c3.metric("일자 수", rep["n_days"])
+    c4.metric("기간",
+              f"{rep['date_min'].strftime('%y-%m')} ~ {rep['date_max'].strftime('%y-%m')}")
+
+    st.divider()
+    st.markdown("### 컬럼별 결측률")
+    miss_df = pd.DataFrame({
+        "컬럼": list(rep["missing_rate"].keys()),
+        "결측 수": [rep["missing"][k] for k in rep["missing_rate"].keys()],
+        "결측률 %": [f"{v:.3f}%" for v in rep["missing_rate"].values()],
+    })
+    st.dataframe(miss_df, use_container_width=True, hide_index=True)
+
+    st.divider()
+    st.markdown("### 이상치 점검")
+    c1, c2 = st.columns(2)
+    c1.metric("가격 ≤ 0 행", rep["bad_price"],
+              delta="정상" if rep["bad_price"] == 0 else "주의",
+              delta_color="off")
+    c2.metric("일일 변동 |return| > 30% 행", rep["bad_return"],
+              delta="정상" if rep["bad_return"] < 100 else "검토",
+              delta_color="off")
+
+    st.divider()
+    st.markdown("### 생존편향 점검 — 종목별 데이터 수 분포")
+    c1, c2, c3 = st.columns(3)
+    c1.metric("최소 행 수", f"{rep['stock_min_rows']:,}")
+    c2.metric("중앙값", f"{rep['stock_median_rows']:,}")
+    c3.metric("최대 행 수", f"{rep['stock_max_rows']:,}")
+    if rep["stock_min_rows"] < rep["stock_max_rows"] * 0.5:
+        st.warning("⚠️ 종목간 데이터 길이 차이 큼 — 생존편향 또는 신규상장 영향 가능. "
+                   "fold 검증 시 fold별 종목 수 확인 권장.")
+    else:
+        st.success("✅ 종목간 데이터 길이 균일 — 생존편향 영향 작음.")
+
+    st.divider()
+    st.markdown("### 누수 방지 체크리스트 (§9.3)")
+    checks = [
+        ("✅", "기술지표 lag(1) 적용 — 전일까지 정보만 사용"),
+        ("✅", "fwd_ret_5d는 shift(-5) — 5일 후 정보 (타깃)"),
+        ("✅", "Walk-forward 시간순 분할 — 랜덤 분할 금지"),
+        ("✅", "공시 inject 시 warmup 25일 + 마지막 5일 제외"),
+        ("⚠️", "정규화: 현재 LightGBM은 정규화 불필요 — 누수 위험 없음"),
+        ("⚠️", "재무제표 발표일 기준 정렬 — 본 panel은 가격 데이터만 사용"),
+    ]
+    for icon, desc in checks:
+        st.markdown(f"- {icon} {desc}")
