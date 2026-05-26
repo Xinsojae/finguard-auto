@@ -204,17 +204,49 @@ if st.session_state["dark_mode"]:
       font-weight: 500 !important;
     }
 
-    /* 드롭다운 옵션 리스트 */
-    [data-baseweb="popover"] [data-baseweb="menu"] {
+    /* ===== popover (dropdown / tooltip) 다크 보정 ===== */
+    /* popover는 portal로 body 끝에 렌더링되므로 :root 변수와 무관하게 직접 지정 */
+    [data-baseweb="popover"],
+    [data-baseweb="popover"] > div,
+    [data-baseweb="popover"] [data-baseweb="menu"],
+    [data-baseweb="popover"] [data-baseweb="menu"] > div,
+    [data-baseweb="popover"] [data-baseweb="menu"] ul,
+    [data-baseweb="popover"] [role="listbox"],
+    [data-baseweb="popover"] [role="presentation"] {
       background: #11161F !important;
-      border: 1px solid #2D3548 !important;
+      background-color: #11161F !important;
+      border-color: #2D3548 !important;
     }
-    [data-baseweb="popover"] [role="option"] {
+    [data-baseweb="popover"] {
+      box-shadow: 0 16px 48px rgba(0, 0, 0, 0.55),
+                  0 0 0 1px #2D3548 !important;
+      border-radius: 10px !important;
+    }
+    [data-baseweb="popover"] [role="option"],
+    [data-baseweb="popover"] li {
+      background: transparent !important;
       color: #E2E8F0 !important;
     }
-    [data-baseweb="popover"] [role="option"]:hover {
+    [data-baseweb="popover"] [role="option"]:hover,
+    [data-baseweb="popover"] li:hover,
+    [data-baseweb="popover"] [role="option"][aria-selected="true"] {
       background: #1A2030 !important;
       color: #FFFFFF !important;
+    }
+    /* popover 내부 텍스트 / 아이콘 */
+    [data-baseweb="popover"] *,
+    [data-baseweb="popover"] span,
+    [data-baseweb="popover"] div {
+      color: #E2E8F0;
+    }
+    [data-baseweb="popover"] svg {
+      fill: #94A3B8 !important;
+    }
+    /* st.tooltip 등 popover 내부 카드도 */
+    [data-baseweb="tooltip"] {
+      background: #11161F !important;
+      color: #E2E8F0 !important;
+      border: 1px solid #2D3548 !important;
     }
 
     /* ===== Multiselect 내부 텍스트·검색 입력 가시성 ===== */
