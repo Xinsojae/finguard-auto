@@ -15,12 +15,29 @@ FinGuard Auto - Streamlit 대시보드 프로토타입
 
 데이터: 합성 패널 (실데이터 전환은 load_synthetic_panel 교체)
 """
+import os
 import streamlit as st
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
+from matplotlib import font_manager
 import lightgbm as lgb
 from sklearn.metrics import roc_auc_score, average_precision_score
+
+# -------- 한글 폰트 (Streamlit Cloud: fonts-nanum, Windows: 맑은고딕) --------
+_KFONT_CANDIDATES = [
+    "/usr/share/fonts/truetype/nanum/NanumGothic.ttf",
+    "/usr/share/fonts/truetype/nanum/NanumBarunGothic.ttf",
+    "/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc",
+    "C:/Windows/Fonts/malgun.ttf",
+    "/System/Library/Fonts/AppleSDGothicNeo.ttc",
+]
+for _f in _KFONT_CANDIDATES:
+    if os.path.exists(_f):
+        font_manager.fontManager.addfont(_f)
+        plt.rcParams["font.family"] = font_manager.FontProperties(fname=_f).get_name()
+        break
+plt.rcParams["axes.unicode_minus"] = False
 
 # -------- 스타일 --------
 st.set_page_config(page_title="FinGuard Auto", page_icon="🛡️", layout="wide")
