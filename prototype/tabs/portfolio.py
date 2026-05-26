@@ -8,6 +8,7 @@ from core.portfolio import (
     sector_concentration, return_correlation,
     portfolio_var, volatility_contribution,
 )
+from core.plotly_theme import layout_kwargs, palette
 from tabs import AppCtx
 
 
@@ -59,18 +60,12 @@ def _render_sector(pf, prices, snap, kfont_fp) -> None:
         textposition="outside",
         hovertemplate="%{y}: %{x:.1f}%<extra></extra>",
     ))
-    fig.add_vline(x=40, line_dash="dash", line_color="#E57373",
+    fig.add_vline(x=40, line_dash="dash", line_color="#F87171",
                   annotation_text="한도 40%", annotation_position="top right")
-    fig.update_layout(
-        height=max(220, len(secs) * 50),
-        xaxis=dict(title="비중 %", gridcolor="#F0F0F0",
-                   range=[0, max(50, max(weights) * 1.15)]),
-        yaxis=dict(gridcolor="#F0F0F0"),
-        margin=dict(l=10, r=10, t=10, b=10),
-        plot_bgcolor="white", paper_bgcolor="white",
-        font=dict(family="Malgun Gothic, sans-serif", color="#555"),
-        showlegend=False,
-    )
+    lk = layout_kwargs(height=max(240, len(secs) * 52))
+    lk["xaxis"].update(title="비중 %", range=[0, max(50, max(weights) * 1.15)])
+    lk["showlegend"] = False
+    fig.update_layout(**lk)
     st.plotly_chart(fig, use_container_width=True)
 
 
@@ -90,13 +85,9 @@ def _render_correlation(panel, snap, held_ids, kfont_fp) -> None:
         texttemplate="%{text}", textfont=dict(size=10),
         hovertemplate="%{x} · %{y}<br>상관: %{z:.2f}<extra></extra>",
     ))
-    fig.update_layout(
-        height=max(350, 30 * len(labels)),
-        xaxis=dict(tickangle=-45, side="bottom"),
-        margin=dict(l=10, r=10, t=10, b=10),
-        plot_bgcolor="white", paper_bgcolor="white",
-        font=dict(family="Malgun Gothic, sans-serif", color="#555"),
-    )
+    lk = layout_kwargs(height=max(360, 30 * len(labels)))
+    lk["xaxis"].update(tickangle=-45, side="bottom")
+    fig.update_layout(**lk)
     st.plotly_chart(fig, use_container_width=True)
     n = len(corr)
     avg_off_diag = (corr.values.sum() - n) / (n * (n - 1)) if n > 1 else 0

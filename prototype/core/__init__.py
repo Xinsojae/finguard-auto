@@ -21,6 +21,9 @@ from core.ui_kit import (
     demo_badge, section_header, info_card, status_pill, metric_row,
     format_won, download_csv_button,
 )
+from core.plotly_theme import (
+    is_dark, palette, layout_kwargs, CHART_COLORS,
+)
 
 __all__ = [
     "FEATS", "FEAT_KOR", "SECTOR_NAMES", "FAKE_NAMES",

@@ -6,6 +6,7 @@ import plotly.graph_objects as go
 
 from core.models import walk_forward_backtest
 from core.ui_kit import download_csv_button
+from core.plotly_theme import layout_kwargs, palette
 from tabs import AppCtx
 
 
@@ -50,24 +51,21 @@ def _render_curve(cum_a, cum_b, per_fold) -> None:
         line=dict(color="#81C784", width=2),
         hovertemplate="%{x|%Y-%m-%d}<br>누적: %{y:.3f}<extra></extra>",
     ))
-    fig.add_hline(y=1.0, line_dash="dash", line_color="#BDBDBD", line_width=1)
+    p = palette()
+    fig.add_hline(y=1.0, line_dash="dash", line_color=p["axis_line_color"], line_width=1)
     for rec in per_fold[1:]:
         fig.add_vline(x=pd.Timestamp(rec["test_start"]),
-                      line_dash="dot", line_color="#90A4AE",
-                      line_width=1, opacity=0.5)
-    fig.update_layout(
-        height=400, hovermode="x unified",
-        title=dict(text="Cumulative Return (walk-forward, 5d non-overlap)",
-                   font=dict(color="#424242", size=14)),
-        xaxis=dict(rangeslider=dict(visible=True, thickness=0.05),
-                   gridcolor="#F0F0F0"),
-        yaxis=dict(title="누적 자산 (start=1.0)", gridcolor="#F0F0F0"),
-        legend=dict(orientation="h", yanchor="bottom", y=1.02,
-                    xanchor="left", x=0),
-        margin=dict(l=10, r=10, t=50, b=10),
-        plot_bgcolor="white", paper_bgcolor="white",
-        font=dict(family="Malgun Gothic, sans-serif", color="#555"),
-    )
+                      line_dash="dot", line_color=p["axis_line_color"],
+                      line_width=1, opacity=0.6)
+    lk = layout_kwargs(height=420)
+    lk["hovermode"] = "x unified"
+    lk["title"] = dict(text="Cumulative Return (walk-forward, 5d non-overlap)",
+                       font=dict(color=p["title_color"], size=14))
+    lk["xaxis"].update(rangeslider=dict(visible=True, thickness=0.05))
+    lk["yaxis"].update(title="누적 자산 (start=1.0)")
+    lk["legend"] = dict(orientation="h", yanchor="bottom", y=1.02, xanchor="left", x=0)
+    lk["margin"] = dict(l=10, r=10, t=50, b=10)
+    fig.update_layout(**lk)
     st.plotly_chart(fig, use_container_width=True)
 
 

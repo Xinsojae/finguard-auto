@@ -10,6 +10,7 @@ import plotly.graph_objects as go
 
 from core import mocks
 from core.ui_kit import demo_badge, section_header, info_card
+from core.plotly_theme import layout_kwargs, palette
 from tabs import AppCtx
 
 
@@ -149,17 +150,13 @@ def _render_patchtst(ctx: AppCtx) -> None:
             line=dict(color="rgba(0,0,0,0)"),
             name="80% 구간", showlegend=True, hoverinfo="skip",
         ))
-        fig.add_vline(x=0, line_dash="dash", line_color="#BDBDBD")
-        fig.update_layout(
-            height=380,
-            xaxis=dict(title="일 (현재=0)", gridcolor="#F0F0F0"),
-            yaxis=dict(title="가격 (원)", gridcolor="#F0F0F0"),
-            margin=dict(l=10, r=10, t=10, b=10),
-            plot_bgcolor="white", paper_bgcolor="white",
-            legend=dict(orientation="h", yanchor="bottom", y=1.02,
-                        xanchor="left", x=0),
-            font=dict(family="Malgun Gothic, sans-serif", color="#555"),
-        )
+        p = palette()
+        fig.add_vline(x=0, line_dash="dash", line_color=p["axis_line_color"])
+        lk = layout_kwargs(height=400)
+        lk["xaxis"].update(title="일 (현재=0)")
+        lk["yaxis"].update(title="가격 (원)")
+        lk["legend"] = dict(orientation="h", yanchor="bottom", y=1.02, xanchor="left", x=0)
+        fig.update_layout(**lk)
         st.plotly_chart(fig, use_container_width=True)
         # 표
         disp = fc.copy()

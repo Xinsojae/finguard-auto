@@ -7,6 +7,7 @@ import streamlit as st
 import plotly.graph_objects as go
 
 from core.config import FEATS, FEAT_KOR
+from core.plotly_theme import layout_kwargs, palette
 from tabs import AppCtx
 
 
@@ -58,18 +59,13 @@ def render(ctx: AppCtx) -> None:
             name=r["name"], line=dict(color=palette[i % 4], width=2),
             hovertemplate=f"<b>{r['name']}</b><br>%{{x|%Y-%m-%d}}<br>지수: %{{y:.1f}}<extra></extra>",
         ))
-    fig.add_hline(y=100, line_dash="dash", line_color="#BDBDBD", line_width=1)
-    fig.update_layout(
-        height=340,
-        xaxis=dict(gridcolor="#F0F0F0"),
-        yaxis=dict(title="정규화 가격 (시작=100)", gridcolor="#F0F0F0"),
-        legend=dict(orientation="h", yanchor="bottom", y=1.02,
-                    xanchor="left", x=0),
-        margin=dict(l=10, r=10, t=10, b=10),
-        plot_bgcolor="white", paper_bgcolor="white",
-        hovermode="x unified",
-        font=dict(family="Malgun Gothic, sans-serif", color="#555"),
-    )
+    p = palette()
+    fig.add_hline(y=100, line_dash="dash", line_color=p["axis_line_color"], line_width=1)
+    lk = layout_kwargs(height=360)
+    lk["yaxis"].update(title="정규화 가격 (시작=100)")
+    lk["legend"] = dict(orientation="h", yanchor="bottom", y=1.02, xanchor="left", x=0)
+    lk["hovermode"] = "x unified"
+    fig.update_layout(**lk)
     st.plotly_chart(fig, use_container_width=True)
 
     st.divider()
@@ -88,17 +84,13 @@ def render(ctx: AppCtx) -> None:
             marker=dict(color=palette[i % 4], opacity=0.75),
             hovertemplate=f"<b>{r['name']}</b><br>%{{x}}<br>SHAP: %{{y:+.3f}}<extra></extra>",
         ))
-    fig.add_hline(y=0, line_color="#BDBDBD", line_width=1)
-    fig.update_layout(
-        barmode="group", height=380,
-        xaxis=dict(gridcolor="#F0F0F0", tickangle=-15),
-        yaxis=dict(title="SHAP contribution", gridcolor="#F0F0F0"),
-        legend=dict(orientation="h", yanchor="bottom", y=1.02,
-                    xanchor="left", x=0),
-        margin=dict(l=10, r=10, t=10, b=10),
-        plot_bgcolor="white", paper_bgcolor="white",
-        font=dict(family="Malgun Gothic, sans-serif", color="#555"),
-    )
+    p = palette()
+    fig.add_hline(y=0, line_color=p["axis_line_color"], line_width=1)
+    lk = layout_kwargs(height=400)
+    lk["xaxis"].update(tickangle=-15)
+    lk["yaxis"].update(title="SHAP contribution")
+    lk["legend"] = dict(orientation="h", yanchor="bottom", y=1.02, xanchor="left", x=0)
+    fig.update_layout(barmode="group", **lk)
     st.plotly_chart(fig, use_container_width=True)
 
     st.divider()

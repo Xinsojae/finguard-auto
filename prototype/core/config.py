@@ -69,143 +69,338 @@ _PROTO_ROOT = Path(__file__).resolve().parent.parent
 REAL_PANEL_PATH = _PROTO_ROOT / "_data" / "real_kospi_top100.pkl"
 TICKER_META_PATH = _PROTO_ROOT / "_data" / "ticker_meta.json"
 
-# ----- 페이지 CSS — 프로덕션 앱 스타일 -----
-# 디자인 원칙:
-#   1. 미니멀 톤다운 (파스텔 + 회색 베이스)
-#   2. 카드 기반 레이아웃 (그림자 부드럽게)
-#   3. 일관된 타이포그래피 (h1~h4, 본문 0.95em)
-#   4. 탭 sticky + 부드러운 강조
+# ----- 페이지 CSS — 프로덕션 앱 디자인 시스템 -----
+# 영감: Linear / Notion / Stripe / Bloomberg Terminal
+# 토큰: CSS variables로 light/dark 분리
 CSS_BLOCK = """
 <style>
-/* ===== 본문 베이스 ===== */
-.block-container { padding-top: 1.2rem; padding-bottom: 3rem; }
-body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Malgun Gothic', sans-serif; }
+/* ============================================================
+   디자인 토큰 (Light 기본값)
+   ============================================================ */
+:root {
+  --bg-base:        #FFFFFF;
+  --bg-elevated:    #FAFBFC;
+  --bg-card:        #FFFFFF;
+  --bg-hover:       #F5F7FA;
+  --bg-subtle:      #F0F3F8;
 
-/* ===== 헤더 ===== */
-h1 { color: #1A1A1A; font-weight: 700; letter-spacing: -0.5px; }
-h2 { color: #2E2E2E; font-weight: 600; margin-top: 1.2rem; }
-h3 { color: #333; font-weight: 600; }
-h4 { color: #424242; font-weight: 600; }
+  --border-subtle:  #EAECEF;
+  --border-default: #D9DCE1;
+  --border-strong:  #B8BDC7;
 
-/* ===== 탭 — 더 부드럽게 ===== */
-.stTabs [data-baseweb="tab-list"] {
-  gap: 4px;
-  background: #F7F9FC;
-  padding: 4px;
-  border-radius: 10px;
-}
-.stTabs [data-baseweb="tab"] {
-  background: transparent;
-  border-radius: 7px;
-  padding: 8px 14px;
-  font-weight: 500;
-  color: #5C5C5C;
-  border: none;
-}
-.stTabs [aria-selected="true"] {
-  background: #FFFFFF !important;
-  color: #1565C0 !important;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.06);
-}
+  --text-primary:   #0F1419;
+  --text-secondary: #4B5563;
+  --text-muted:     #9CA3AF;
+  --text-inverse:   #FFFFFF;
 
-/* ===== 메트릭 색상 ===== */
-.metric-up      { color: #5CB874; font-weight: 600; }
-.metric-risk    { color: #E07A7A; font-weight: 600; }
-.metric-neutral { color: #888;    font-weight: 600; }
+  --accent:         #2563EB;
+  --accent-hover:   #1D4ED8;
+  --accent-soft:    #DBEAFE;
+  --accent-glow:    rgba(37, 99, 235, 0.12);
 
-/* ===== 카드 ===== */
-.card {
-  border: 1px solid #ECECEC;
-  border-radius: 12px;
-  padding: 16px 18px;
-  background: #FFFFFF;
-  margin-bottom: 10px;
-  box-shadow: 0 1px 2px rgba(0,0,0,0.03);
-  transition: box-shadow 0.2s;
-}
-.card:hover { box-shadow: 0 2px 6px rgba(0,0,0,0.06); }
-.card h4 { margin: 0 0 6px 0; font-weight: 600; color: #2E2E2E; }
-.card small { color: #999; font-weight: 400; }
+  --success:        #059669;
+  --success-soft:   #D1FAE5;
+  --warning:        #D97706;
+  --warning-soft:   #FEF3C7;
+  --danger:         #DC2626;
+  --danger-soft:    #FEE2E2;
 
-/* ===== 분류 태그 (파스텔) ===== */
-.tag-priority { background: #C8E6C9; color: #2E5933; padding: 3px 10px;
-                border-radius: 10px; font-size: 0.78em; font-weight: 600; }
-.tag-highrisk { background: #FFE0B2; color: #7A4E13; padding: 3px 10px;
-                border-radius: 10px; font-size: 0.78em; font-weight: 600; }
-.tag-hold     { background: #ECEFF1; color: #546E7A; padding: 3px 10px;
-                border-radius: 10px; font-size: 0.78em; font-weight: 600; }
-.tag-avoid    { background: #FFCDD2; color: #8B2D2D; padding: 3px 10px;
-                border-radius: 10px; font-size: 0.78em; font-weight: 600; }
+  --shadow-sm:      0 1px 2px rgba(15, 20, 25, 0.04);
+  --shadow-md:      0 4px 12px rgba(15, 20, 25, 0.06);
+  --shadow-lg:      0 12px 32px rgba(15, 20, 25, 0.08);
+  --shadow-glow:    0 0 0 1px var(--accent-glow), 0 4px 16px var(--accent-glow);
 
-/* ===== 면책 박스 ===== */
-.disclaimer {
-  background: #FFF8E1;
-  padding: 10px 14px;
-  border-left: 3px solid #FFCA28;
-  border-radius: 6px;
-  font-size: 0.85em;
-  color: #6B6B6B;
-  margin: 8px 0 14px 0;
+  --radius-sm:      6px;
+  --radius:         10px;
+  --radius-lg:      14px;
+  --radius-xl:      18px;
+
+  --ease:           cubic-bezier(0.4, 0, 0.2, 1);
+  --dur:            180ms;
 }
 
-/* ===== 상단 헤더 바 ===== */
+/* ============================================================
+   타이포그래피
+   ============================================================ */
+html, body, .stApp {
+  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display',
+               'Inter', 'Pretendard Variable', 'Pretendard',
+               'Segoe UI Variable', 'Malgun Gothic', sans-serif !important;
+  font-feature-settings: "cv11", "ss01", "ss03", "tnum";
+  color: var(--text-primary);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+h1 { font-weight: 700; letter-spacing: -0.025em; color: var(--text-primary); }
+h2 { font-weight: 600; letter-spacing: -0.02em; color: var(--text-primary); margin-top: 1.4rem; }
+h3 { font-weight: 600; letter-spacing: -0.015em; color: var(--text-primary); }
+h4 { font-weight: 600; letter-spacing: -0.01em; color: var(--text-primary); }
+p, li, span, label { color: var(--text-secondary); }
+
+/* 숫자 tabular */
+[data-testid="stMetricValue"] {
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+/* ============================================================
+   본문 베이스
+   ============================================================ */
+.block-container {
+  padding-top: 1.4rem !important;
+  padding-bottom: 4rem !important;
+  max-width: 1400px;
+}
+.stApp { background: var(--bg-base); }
+
+/* ============================================================
+   상단 헤더 바 — gradient + glow
+   ============================================================ */
 .app-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 16px 20px;
-  background: linear-gradient(135deg, #5B8DEF 0%, #1565C0 100%);
+  padding: 22px 28px;
+  background: linear-gradient(135deg, #1E40AF 0%, #2563EB 50%, #3B82F6 100%);
   color: white;
-  border-radius: 12px;
-  margin-bottom: 16px;
-  box-shadow: 0 2px 8px rgba(21,101,192,0.15);
+  border-radius: var(--radius-lg);
+  margin-bottom: 20px;
+  box-shadow: 0 8px 24px rgba(37, 99, 235, 0.18), 0 1px 2px rgba(0,0,0,0.08);
+  position: relative;
+  overflow: hidden;
 }
-.app-header h1 { color: white !important; margin: 0; font-size: 1.6em; }
-.app-header .subtitle { color: rgba(255,255,255,0.85); font-size: 0.9em; margin: 4px 0 0 0; }
+.app-header::before {
+  content: ""; position: absolute; top: -50%; right: -10%;
+  width: 320px; height: 320px;
+  background: radial-gradient(circle, rgba(255,255,255,0.12) 0%, rgba(255,255,255,0) 70%);
+  pointer-events: none;
+}
+.app-header .brand h1 {
+  color: white !important; margin: 0; font-size: 1.65em;
+  letter-spacing: -0.025em; font-weight: 700;
+}
+.app-header .subtitle {
+  color: rgba(255,255,255,0.85); font-size: 0.88em;
+  margin: 4px 0 0 0; font-weight: 400; letter-spacing: -0.01em;
+}
 .app-header .right { display: flex; gap: 8px; align-items: center; }
 .app-header .pill {
-  background: rgba(255,255,255,0.2);
-  padding: 4px 10px;
-  border-radius: 10px;
-  font-size: 0.78em;
+  background: rgba(255,255,255,0.16);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(255,255,255,0.2);
+  padding: 5px 12px;
+  border-radius: 100px;
+  font-size: 0.76em;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: white;
+}
+
+/* ============================================================
+   탭 — Linear / Notion 스타일 세그먼티드
+   ============================================================ */
+.stTabs [data-baseweb="tab-list"] {
+  gap: 2px;
+  background: var(--bg-elevated);
+  padding: 5px;
+  border-radius: var(--radius);
+  border: 1px solid var(--border-subtle);
+  box-shadow: var(--shadow-sm);
+}
+.stTabs [data-baseweb="tab"] {
+  background: transparent;
+  border-radius: 7px;
+  padding: 9px 16px;
+  font-weight: 500;
+  font-size: 0.92em;
+  color: var(--text-secondary);
+  border: none;
+  transition: all var(--dur) var(--ease);
+  letter-spacing: -0.01em;
+}
+.stTabs [data-baseweb="tab"]:hover {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+}
+.stTabs [aria-selected="true"] {
+  background: var(--bg-card) !important;
+  color: var(--accent) !important;
+  box-shadow: var(--shadow-sm), 0 0 0 1px var(--accent-glow);
   font-weight: 600;
 }
 
-/* ===== Divider ===== */
-hr { border-top: 1px solid #EEEEEE !important; margin: 1.2rem 0 !important; }
-
-/* ===== 데이터프레임 ===== */
-.stDataFrame { font-size: 0.92em; }
-
-/* ===== 사이드바 ===== */
-[data-testid="stSidebar"] {
-  background: #F7F9FC;
-  border-right: 1px solid #ECECEC;
+/* ============================================================
+   카드 — soft shadow + hover lift
+   ============================================================ */
+.card {
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  padding: 18px 20px;
+  background: var(--bg-card);
+  margin-bottom: 12px;
+  box-shadow: var(--shadow-sm);
+  transition: transform var(--dur) var(--ease),
+              box-shadow var(--dur) var(--ease),
+              border-color var(--dur) var(--ease);
 }
-[data-testid="stSidebar"] h3 { color: #424242; font-size: 1em; font-weight: 600; }
+.card:hover {
+  box-shadow: var(--shadow-md);
+  border-color: var(--border-default);
+  transform: translateY(-1px);
+}
+.card h4 {
+  margin: 0 0 8px 0; font-weight: 600; font-size: 1.02em;
+  color: var(--text-primary); letter-spacing: -0.01em;
+}
+.card small { color: var(--text-muted); font-weight: 400; }
 
-/* ===== 버튼 ===== */
-.stButton button {
-  border-radius: 8px;
+/* 분류 태그 ---------- */
+.tag-priority, .tag-highrisk, .tag-hold, .tag-avoid {
+  display: inline-block;
+  padding: 4px 11px;
+  border-radius: 100px;
+  font-size: 0.74em;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  border: 1px solid transparent;
+}
+.tag-priority { background: var(--success-soft); color: var(--success); border-color: rgba(5,150,105,0.2); }
+.tag-highrisk { background: var(--warning-soft); color: var(--warning); border-color: rgba(217,119,6,0.2); }
+.tag-hold     { background: #F1F4F8; color: #475569; border-color: #D9DCE1; }
+.tag-avoid    { background: var(--danger-soft); color: var(--danger); border-color: rgba(220,38,38,0.2); }
+
+/* 메트릭 색상 ---------- */
+.metric-up      { color: var(--success); font-weight: 600; }
+.metric-risk    { color: var(--danger);  font-weight: 600; }
+.metric-neutral { color: var(--text-muted); font-weight: 600; }
+
+/* 면책 박스 ---------- */
+.disclaimer {
+  background: var(--warning-soft);
+  padding: 11px 16px;
+  border-left: 3px solid var(--warning);
+  border-radius: var(--radius-sm);
+  font-size: 0.85em;
+  color: var(--text-secondary);
+  margin: 10px 0 16px 0;
+  line-height: 1.55;
+}
+
+/* ============================================================
+   Divider — 절제된 라인
+   ============================================================ */
+hr {
+  border: none !important;
+  border-top: 1px solid var(--border-subtle) !important;
+  margin: 1.4rem 0 !important;
+}
+
+/* ============================================================
+   사이드바
+   ============================================================ */
+[data-testid="stSidebar"] {
+  background: var(--bg-elevated) !important;
+  border-right: 1px solid var(--border-subtle) !important;
+}
+[data-testid="stSidebar"] h3 {
+  color: var(--text-primary) !important;
+  font-size: 0.95em;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  margin-top: 0.4rem;
+}
+[data-testid="stSidebar"] .stMetric { padding: 4px 0; }
+[data-testid="stSidebar"] [data-testid="stMetricValue"] { font-size: 1.15em; }
+[data-testid="stSidebar"] [data-testid="stMetricLabel"] {
+  color: var(--text-muted);
+  font-size: 0.82em;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
   font-weight: 500;
-  transition: all 0.15s;
+}
+
+/* ============================================================
+   버튼 — primary는 glow, secondary는 보더
+   ============================================================ */
+.stButton button {
+  border-radius: var(--radius-sm);
+  font-weight: 500;
+  font-size: 0.92em;
+  padding: 8px 16px;
+  transition: all var(--dur) var(--ease);
+  border: 1px solid var(--border-default);
+  background: var(--bg-card);
+  color: var(--text-primary);
+  letter-spacing: -0.005em;
+}
+.stButton button:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-sm);
 }
 .stButton button[kind="primary"] {
-  background: #5B8DEF;
-  border: none;
-  box-shadow: 0 1px 3px rgba(91,141,239,0.3);
+  background: linear-gradient(135deg, var(--accent) 0%, var(--accent-hover) 100%);
+  border: 1px solid var(--accent-hover);
+  color: white;
+  box-shadow: 0 1px 3px var(--accent-glow), 0 4px 12px var(--accent-glow);
 }
 .stButton button[kind="primary"]:hover {
-  background: #4A7BD8;
-  box-shadow: 0 2px 6px rgba(91,141,239,0.4);
+  background: linear-gradient(135deg, var(--accent-hover) 0%, #1E3A8A 100%);
+  color: white;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 6px var(--accent-glow), 0 8px 20px var(--accent-glow);
 }
 
-/* ===== Expander ===== */
+/* ============================================================
+   Expander / Slider / Input
+   ============================================================ */
 .streamlit-expanderHeader {
   font-weight: 500;
-  color: #424242;
-  background: #FAFAFA;
-  border-radius: 8px;
+  color: var(--text-primary);
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-subtle) !important;
+  border-radius: var(--radius-sm);
+  padding: 10px 14px !important;
+  transition: all var(--dur) var(--ease);
+}
+.streamlit-expanderHeader:hover {
+  background: var(--bg-hover);
+  border-color: var(--border-default) !important;
+}
+
+.stTextInput input, .stTextArea textarea, .stNumberInput input {
+  background: var(--bg-card) !important;
+  border: 1px solid var(--border-default) !important;
+  border-radius: var(--radius-sm) !important;
+  color: var(--text-primary) !important;
+  font-family: inherit !important;
+  transition: all var(--dur) var(--ease);
+}
+.stTextInput input:focus, .stTextArea textarea:focus, .stNumberInput input:focus {
+  border-color: var(--accent) !important;
+  box-shadow: 0 0 0 3px var(--accent-glow) !important;
+}
+
+/* ============================================================
+   DataFrame
+   ============================================================ */
+.stDataFrame {
+  font-size: 0.9em;
+  border-radius: var(--radius);
+  overflow: hidden;
+  border: 1px solid var(--border-subtle);
+}
+
+/* ============================================================
+   알림/Info/Success/Warning 박스 통일
+   ============================================================ */
+.stAlert {
+  border-radius: var(--radius);
+  border: 1px solid var(--border-subtle);
 }
 </style>
 """

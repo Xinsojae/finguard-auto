@@ -7,6 +7,7 @@ from plotly.subplots import make_subplots
 
 from core.config import FEATS, FEAT_KOR
 from core.ui import tag_html, tag_plain
+from core.plotly_theme import layout_kwargs, palette
 from tabs import AppCtx
 
 
@@ -123,19 +124,23 @@ def _render_price_chart(panel, row, sel) -> None:
         marker=dict(color=colors, opacity=0.6),
         hovertemplate="%{x|%Y-%m-%d}<br>거래량: %{y:,.0f}<extra></extra>",
     ), row=2, col=1)
+    p = palette()
+    lk = layout_kwargs(height=380)
+    lk["legend"] = dict(orientation="h", yanchor="bottom", y=1.02, xanchor="left", x=0)
+    lk["hovermode"] = "x unified"
+    lk["showlegend"] = True
+    # subplot 별 xaxis/yaxis 별도 설정 (lk의 xaxis/yaxis 1개만 적용되므로 직접 update)
     fig.update_layout(
-        height=360,
-        margin=dict(l=10, r=10, t=10, b=10),
-        plot_bgcolor="white", paper_bgcolor="white",
-        legend=dict(orientation="h", yanchor="bottom", y=1.02,
-                    xanchor="left", x=0),
-        hovermode="x unified",
-        font=dict(family="Malgun Gothic, sans-serif", color="#555"),
-        showlegend=True,
+        height=lk["height"], hovermode=lk["hovermode"],
+        margin=lk["margin"], plot_bgcolor=lk["plot_bgcolor"],
+        paper_bgcolor=lk["paper_bgcolor"], font=lk["font"],
+        legend=lk["legend"], showlegend=True,
     )
-    fig.update_xaxes(gridcolor="#F0F0F0", showgrid=True)
-    fig.update_yaxes(gridcolor="#F0F0F0", showgrid=True, row=1, col=1, title="원")
-    fig.update_yaxes(gridcolor="#F0F0F0", showgrid=True, row=2, col=1, title="거래량")
+    fig.update_xaxes(gridcolor=p["grid_color"], linecolor=p["axis_line_color"])
+    fig.update_yaxes(gridcolor=p["grid_color"], linecolor=p["axis_line_color"],
+                     row=1, col=1, title="원")
+    fig.update_yaxes(gridcolor=p["grid_color"], linecolor=p["axis_line_color"],
+                     row=2, col=1, title="거래량")
     st.plotly_chart(fig, use_container_width=True)
 
 

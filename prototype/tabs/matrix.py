@@ -3,6 +3,7 @@ import streamlit as st
 import plotly.graph_objects as go
 
 from core.config import CATEGORY_COLORS as _COLOR_MAP
+from core.plotly_theme import layout_kwargs, palette
 from tabs import AppCtx
 
 
@@ -41,20 +42,14 @@ def render(ctx: AppCtx) -> None:
             textfont=dict(size=10, color="#424242"),
             hoverinfo="skip",
         ))
-    fig.add_hline(y=ctx.risk_th, line_dash="dash", line_color="#BDBDBD")
-    fig.add_vline(x=ctx.up_th, line_dash="dash", line_color="#BDBDBD")
-    fig.update_layout(
-        height=520,
-        xaxis=dict(title=f"Upside Score (분류 ≥ {ctx.up_th})",
-                   range=[0, 100], gridcolor="#F0F0F0"),
-        yaxis=dict(title=f"Risk Score (위험 ≥ {ctx.risk_th})",
-                   range=[0, 100], gridcolor="#F0F0F0"),
-        legend=dict(orientation="h", yanchor="bottom", y=1.02,
-                    xanchor="left", x=0),
-        margin=dict(l=10, r=10, t=10, b=10),
-        plot_bgcolor="white", paper_bgcolor="white",
-        font=dict(family="Malgun Gothic, sans-serif", color="#555"),
-    )
+    p = palette()
+    fig.add_hline(y=ctx.risk_th, line_dash="dash", line_color=p["axis_line_color"])
+    fig.add_vline(x=ctx.up_th, line_dash="dash", line_color=p["axis_line_color"])
+    lk = layout_kwargs(height=520)
+    lk["xaxis"].update(title=f"Upside Score (분류 ≥ {ctx.up_th})", range=[0, 100])
+    lk["yaxis"].update(title=f"Risk Score (위험 ≥ {ctx.risk_th})", range=[0, 100])
+    lk["legend"] = dict(orientation="h", yanchor="bottom", y=1.02, xanchor="left", x=0)
+    fig.update_layout(**lk)
     st.plotly_chart(fig, use_container_width=True)
 
     st.divider()

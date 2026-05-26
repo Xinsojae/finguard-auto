@@ -47,26 +47,115 @@ from core.tour import render_tour_widget
 st.set_page_config(page_title="FinGuard Auto", page_icon="🛡️", layout="wide")
 apply_css()
 
-# ----- 다크모드 토글 (CSS override) -----
+# ----- 다크모드 (CSS variables override — 고급 다크 팔레트) -----
+# 영감: Linear, Vercel, Bloomberg Terminal. 미드나잇 블루-슬레이트.
 if "dark_mode" not in st.session_state:
     st.session_state["dark_mode"] = False
 if st.session_state["dark_mode"]:
     st.markdown("""
     <style>
-    body, .stApp, .block-container { background: #1A1D24 !important; color: #E0E0E0 !important; }
-    [data-testid="stSidebar"] { background: #232730 !important; border-right: 1px solid #2D3140 !important; }
-    h1, h2, h3, h4 { color: #ECECEC !important; }
-    .card { background: #232730 !important; border-color: #2D3140 !important; }
-    .card h4 { color: #ECECEC !important; }
-    .card small { color: #888 !important; }
-    .stTabs [data-baseweb="tab-list"] { background: #232730 !important; }
-    .stTabs [aria-selected="true"] { background: #1A1D24 !important; color: #5B8DEF !important; }
-    .stTabs [data-baseweb="tab"] { color: #BBB !important; }
-    .disclaimer { background: #2D2A1F !important; color: #BFB99F !important; }
-    .stDataFrame { background: #232730 !important; }
-    div[data-testid="stMetricValue"] { color: #ECECEC !important; }
-    div[data-testid="stMetricLabel"] { color: #AAA !important; }
-    hr { border-top-color: #2D3140 !important; }
+    :root {
+      --bg-base:        #0A0E14;
+      --bg-elevated:    #11161F;
+      --bg-card:        #161C28;
+      --bg-hover:       #1C2433;
+      --bg-subtle:      #0F1420;
+
+      --border-subtle:  #1F2937;
+      --border-default: #2D3548;
+      --border-strong:  #3F4859;
+
+      --text-primary:   #F1F5F9;
+      --text-secondary: #94A3B8;
+      --text-muted:     #64748B;
+      --text-inverse:   #0A0E14;
+
+      --accent:         #60A5FA;
+      --accent-hover:   #93C5FD;
+      --accent-soft:    rgba(96, 165, 250, 0.12);
+      --accent-glow:    rgba(96, 165, 250, 0.18);
+
+      --success:        #34D399;
+      --success-soft:   rgba(52, 211, 153, 0.12);
+      --warning:        #FBBF24;
+      --warning-soft:   rgba(251, 191, 36, 0.12);
+      --danger:         #F87171;
+      --danger-soft:    rgba(248, 113, 113, 0.12);
+
+      --shadow-sm:      0 1px 2px rgba(0, 0, 0, 0.4);
+      --shadow-md:      0 4px 16px rgba(0, 0, 0, 0.45);
+      --shadow-lg:      0 16px 48px rgba(0, 0, 0, 0.55);
+    }
+
+    .stApp { background: var(--bg-base) !important; }
+
+    /* 헤더 바 — 다크에서 더 깊이있게 */
+    .app-header {
+      background: linear-gradient(135deg, #0F172A 0%, #1E293B 50%, #1E3A8A 100%) !important;
+      box-shadow: 0 8px 28px rgba(0,0,0,0.5),
+                  0 0 0 1px rgba(96,165,250,0.1) !important;
+    }
+    .app-header .pill {
+      background: rgba(96, 165, 250, 0.15) !important;
+      border: 1px solid rgba(96, 165, 250, 0.3) !important;
+      color: #DBEAFE !important;
+    }
+
+    /* Streamlit 위젯 라벨/캡션 */
+    label, .stSelectbox label, .stRadio label, .stSlider label,
+    .stMultiSelect label, .stTextInput label, .stTextArea label,
+    .stNumberInput label, .stToggle label, .stCheckbox label,
+    .stFileUploader label, .stDateInput label, p, span, li {
+      color: var(--text-secondary) !important;
+    }
+    .stCaption, [data-testid="stCaptionContainer"] {
+      color: var(--text-muted) !important;
+    }
+
+    /* Selectbox/Multiselect/Radio 다크 */
+    .stSelectbox > div > div, .stMultiSelect > div > div {
+      background: var(--bg-card) !important;
+      border-color: var(--border-default) !important;
+      color: var(--text-primary) !important;
+    }
+
+    /* DataFrame 다크 */
+    .stDataFrame, .stDataFrame table {
+      background: var(--bg-card) !important;
+      color: var(--text-primary) !important;
+    }
+    .stDataFrame [data-testid="stDataFrameResizable"] {
+      background: var(--bg-card) !important;
+    }
+    .stDataFrame th {
+      background: var(--bg-elevated) !important;
+      color: var(--text-primary) !important;
+      border-color: var(--border-subtle) !important;
+    }
+    .stDataFrame td {
+      color: var(--text-secondary) !important;
+      border-color: var(--border-subtle) !important;
+    }
+
+    /* st.info/warning/success */
+    .stAlert {
+      background: var(--bg-card) !important;
+      border-color: var(--border-subtle) !important;
+    }
+    .stAlert p { color: var(--text-primary) !important; }
+
+    /* 코드 블록 */
+    code, pre {
+      background: var(--bg-elevated) !important;
+      color: var(--accent-hover) !important;
+      border: 1px solid var(--border-subtle) !important;
+    }
+
+    /* 슬라이더 핸들 */
+    .stSlider [data-baseweb="slider"] [role="slider"] {
+      background: var(--accent) !important;
+      border-color: var(--accent-hover) !important;
+    }
     </style>
     """, unsafe_allow_html=True)
 
