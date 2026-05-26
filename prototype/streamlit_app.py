@@ -22,6 +22,7 @@ from core import (
     gen_panel, load_real_panel_bundled, inject_disclosure_signals,
     latest_snapshot, make_features, train_models,
     train_anomaly_detector, score_snapshot,
+    compute_confidence_for_snap,
     classify, apply_css,
 )
 from tabs import AppCtx
@@ -125,8 +126,13 @@ with st.spinner(("실데이터 로드" if USE_REAL else "합성 데이터 생성
     snap["category"] = snap.apply(
         lambda r: classify(r["score_up"], r["score_risk"], CFG_UP_TH, CFG_RISK_TH),
         axis=1)
-    snap["confidence"] = ((snap["score_up_p"] - 0.5).abs()
-                          + (snap["score_cr_p"] - 0.5).abs()).rank(pct=True)
+    # AI 신뢰도 5요소 (§11.4)
+    conf_df = compute_confidence_for_snap(
+        snap=snap, panel=panel, model_auc=metrics["up_auc"])
+    for col in conf_df.columns:
+        snap[col] = conf_df[col].values
+    # 기존 confidence 컬럼 호환 유지 (rank 기반 → 5요소 overall로 교체)
+    snap["confidence"] = snap["confidence_overall"]
     # Isolation Forest 이상 탐지 (§10.2 MVP #3)
     snap["anomaly_score"] = score_snapshot(iso_model, snap)
 

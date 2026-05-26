@@ -61,12 +61,25 @@ def render(ctx: AppCtx) -> None:
         st.metric("급락 위험", f"{row['score_risk']}/100",
                   delta=f"{row['score_risk'] - 50:+d} vs 중립",
                   delta_color="inverse")
-        st.metric("AI 신뢰도", conf)
+        st.metric("AI 신뢰도", conf,
+                  help="기획서 §11.4 5요소 평균. 아래 expander에서 분해 확인.")
         anom = int(row.get("anomaly_score", 0))
         anom_lbl = "🟥 의심" if anom >= 70 else "🟧 주의" if anom >= 40 else "🟩 정상"
         st.metric("이상 탐지 (IF)", f"{anom}/100",
                   delta=anom_lbl, delta_color="off",
                   help="Isolation Forest: 거래량·변동성 패턴 비정상도. ≥70 의심.")
+        # 신뢰도 5요소 분해
+        with st.expander("🧮 신뢰도 5요소 분해 (§11.4)"):
+            breakdown = {
+                "유사 사례 수": row.get("conf_similarity", 0),
+                "데이터 충분성": row.get("conf_data", 0),
+                "시장 안정성": row.get("conf_market", 0),
+                "예측 분산 (확신)": row.get("conf_variance", 0),
+                "과거 성능 (AUC)": row.get("conf_perf", 0),
+            }
+            for k, v in breakdown.items():
+                st.markdown(f"- **{k}**: {v*100:.0f}/100")
+            st.caption(f"종합(평균): {row.get('confidence_overall', 0)*100:.0f}/100 → **{conf}**")
     with c3:
         _render_shap_chart(row, ctx.m_up, ctx.kfont_fp)
 
