@@ -1,0 +1,47 @@
+{
+  "data_stats": {
+    "n_stocks": 120,
+    "n_days": 1000,
+    "n_rows": 120000,
+    "n_features": 9,
+    "pos_rate_up": 0.2985,
+    "pos_rate_crash": 0.14018333333333333
+  },
+  "exp1_upside": {
+    "precision": 0.0,
+    "recall": 0.0,
+    "f1": 0.0,
+    "roc_auc": 0.55,
+    "pr_auc": 0.3301,
+    "prec_top20": 0.3435,
+    "recall_top20": 0.23
+  },
+  "exp2_crash": {
+    "precision": 0.0,
+    "recall": 0.0,
+    "f1": 0.0,
+    "roc_auc": 0.615,
+    "pr_auc": 0.1921,
+    "prec_top20": 0.2061,
+    "recall_top20": 0.2897
+  },
+  "backtest_A_upside_only": {
+    "strategy": "A: 상승 Top-20",
+    "n": 582.0,
+    "mean_ret": -0.0026,
+    "cum_ret": -0.79,
+    "mdd": -0.8168,
+    "sharpe": -1.2466,
+    "winrate": 0.4347
+  },
+  "backtest_B_with_risk_filter": {
+    "strategy": "B: 상승 Top-20 + 리스크 필터",
+    "n": 582.0,
+    "mean_ret": -0.0026,
+    "cum_ret": -0.7887,
+    "mdd": -0.8157,
+    "sharpe": -1.2415,
+    "winrate": 0.4364
+  },
+  "avoided_candidates": 0
+}
