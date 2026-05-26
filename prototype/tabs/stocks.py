@@ -62,6 +62,11 @@ def render(ctx: AppCtx) -> None:
                   delta=f"{row['score_risk'] - 50:+d} vs 중립",
                   delta_color="inverse")
         st.metric("AI 신뢰도", conf)
+        anom = int(row.get("anomaly_score", 0))
+        anom_lbl = "🟥 의심" if anom >= 70 else "🟧 주의" if anom >= 40 else "🟩 정상"
+        st.metric("이상 탐지 (IF)", f"{anom}/100",
+                  delta=anom_lbl, delta_color="off",
+                  help="Isolation Forest: 거래량·변동성 패턴 비정상도. ≥70 의심.")
     with c3:
         _render_shap_chart(row, ctx.m_up, ctx.kfont_fp)
 

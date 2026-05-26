@@ -9,6 +9,7 @@ from core.data import (
 )
 from core.features import make_features
 from core.models import train_models, walk_forward_backtest
+from core.anomaly import train_anomaly_detector, score_snapshot
 from core.ui import classify, tag_html, apply_css
 
 __all__ = [
@@ -18,5 +19,6 @@ __all__ = [
     "latest_snapshot",
     "make_features",
     "train_models", "walk_forward_backtest",
+    "train_anomaly_detector", "score_snapshot",
     "classify", "tag_html", "apply_css",
 ]

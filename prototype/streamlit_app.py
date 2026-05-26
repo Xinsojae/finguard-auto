@@ -21,6 +21,7 @@ from core import (
     FEATS, REAL_PANEL_PATH,
     gen_panel, load_real_panel_bundled, inject_disclosure_signals,
     latest_snapshot, make_features, train_models,
+    train_anomaly_detector, score_snapshot,
     classify, apply_css,
 )
 from tabs import AppCtx
@@ -114,6 +115,7 @@ with st.spinner(("실데이터 로드" if USE_REAL else "합성 데이터 생성
     panel = inject_disclosure_signals(panel, n_events_per_stock=4)
     panel = make_features(panel)
     m_up, m_cr, metrics = train_models(panel)
+    iso_model = train_anomaly_detector(panel)
     snap, latest_date = latest_snapshot(panel)
     snap["score_up_p"] = m_up.predict_proba(snap[FEATS])[:, 1]
     snap["score_cr_p"] = m_cr.predict_proba(snap[FEATS])[:, 1]
@@ -124,6 +126,8 @@ with st.spinner(("실데이터 로드" if USE_REAL else "합성 데이터 생성
         axis=1)
     snap["confidence"] = ((snap["score_up_p"] - 0.5).abs()
                           + (snap["score_cr_p"] - 0.5).abs()).rank(pct=True)
+    # Isolation Forest 이상 탐지 (§10.2 MVP #3)
+    snap["anomaly_score"] = score_snapshot(iso_model, snap)
 
 
 # ============================================================
@@ -146,6 +150,9 @@ with st.sidebar:
     st.metric("시장 위험도", f"{mkt_risk}/100 ({mkt_label})")
     st.metric("우선 관심 후보 수", int((snap["category"] == "PRIORITY").sum()))
     st.metric("회피 후보 수", int((snap["category"] == "AVOID").sum()))
+    n_anom = int((snap["anomaly_score"] >= 70).sum())
+    st.metric("이상치 의심 종목", f"{n_anom} (Isolation Forest)",
+              help="anomaly_score ≥ 70. 거래량·변동성·드로다운 패턴이 평소와 다른 종목.")
     st.divider()
     st.subheader("📊 모델 성능 (out-of-time)")
     st.metric("상승 ROC-AUC", f"{metrics['up_auc']:.3f}")
