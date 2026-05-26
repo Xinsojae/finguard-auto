@@ -490,6 +490,43 @@ def load_mock_disclosures(n_days=30, seed=42) -> pd.DataFrame:
     return df.sort_values("rcept_dt", ascending=False).reset_index(drop=True)
 
 
+def classify_to_dict(text: str) -> Optional[dict]:
+    """메인 앱 연동용 브리지. 텍스트 → top 결과 dict 또는 None.
+
+    risk_score는 -3(매우악재) ~ +3(매우호재) 정수.
+    """
+    res = classify(text)
+    if not res:
+        return None
+    top = res[0]
+    return {
+        "code": top.code,
+        "name": top.name,
+        "category": top.category,
+        "risk_score": top.risk_score,
+        "risk_label": top.risk_label,
+        "risk_color": top.risk_color,
+        "confidence": top.confidence,
+        "explanation": top.explanation,
+        "checkpoints": top.checkpoints[:3],
+        "matched_keywords": top.matched_keywords[:5],
+    }
+
+
+def classify_mock_all() -> List[dict]:
+    """Mock 공시 전건 분류 → 메인 앱에 주입할 이벤트 풀."""
+    mock = load_mock_disclosures(n_days=20)
+    events = []
+    for _, row in mock.iterrows():
+        full = (row["report_nm"] or "") + " " + (row["report_body"] or "")
+        d = classify_to_dict(full)
+        if d:
+            d["corp_name"] = row["corp_name"]
+            d["report_nm"] = row["report_nm"]
+            events.append(d)
+    return events
+
+
 # =============================================================================
 # 7. 데모용 CLI
 # =============================================================================
