@@ -443,16 +443,21 @@ with st.sidebar:
 # ============================================================
 if USE_REAL:
     st.markdown(
-        "<div class='disclaimer'>⚠️ 실데이터 모드: KOSPI 시총 상위 99종목(2021-01-04 ~ 2025-12-31). "
-        "공시·뉴스 NLP 피처는 룰베이스 분류기로 주입(KF-DeBERTa는 확장 계획). "
-        "본 분석은 매수·매도 추천이 아닌 의사결정 보조이며, 최종 판단·책임은 사용자에게 있습니다.</div>",
+        "<div class='disclaimer'>"
+        "⚠️ <b>실데이터 모드</b>: KOSPI 시총 상위 99종목 (2021-01-04 ~ 2025-12-31)<br>"
+        "&nbsp;&nbsp;<b>실데이터</b>: 일봉 가격·거래량 (FinanceDataReader, KRX)<br>"
+        "&nbsp;&nbsp;<b>시뮬레이션</b>: 공시 이벤트·뉴스 감성·시장 국면·이벤트 캘린더 "
+        "(KF-DeBERTa·OpenDART 연동은 확장 계획)<br>"
+        "&nbsp;&nbsp;⚠️ 번들 데이터 최신일 <b>2025-12-30</b> — 라이브 시점과 차이 가능"
+        "</div>",
         unsafe_allow_html=True,
     )
 else:
     st.markdown(
-        f"<div class='disclaimer'>⚠️ 합성 데이터 모드: GARCH형 패널 "
-        f"({CFG_N_STOCKS}종목 × {CFG_N_DAYS}일). "
-        "실제 매수·매도 추천이 아닙니다. 최종 투자 판단·책임은 사용자에게 있습니다.</div>",
+        f"<div class='disclaimer'>"
+        f"⚠️ <b>합성 데이터 모드</b>: GARCH형 패널 ({CFG_N_STOCKS}종목 × {CFG_N_DAYS}일)<br>"
+        f"&nbsp;&nbsp;<b>가격·거래량·공시·뉴스·시장국면 전부 시뮬레이션</b>. 실 매매 추천 아님."
+        f"</div>",
         unsafe_allow_html=True,
     )
 
@@ -572,11 +577,15 @@ with st.sidebar:
     # ----- 알림 (사이드바 상단 영역) -----
     alerts = mocks.generate_alerts(snap)
     st.subheader(f"🔔 알림 ({len(alerts)})")
+    st.caption("📅 캘린더 이벤트는 시뮬레이션 (OpenDART 연동 시 실데이터로 교체)")
     if alerts:
         for a in alerts[:5]:
-            st.markdown(f"<div style='padding:6px 10px;background:#FAFAFA;"
+            st.markdown(f"<div style='padding:6px 10px;"
+                        f"background:var(--bg-card);"
+                        f"border:1px solid var(--border-subtle);"
                         f"border-left:3px solid #FFB74D;border-radius:4px;"
-                        f"margin:4px 0;font-size:0.85em;'>"
+                        f"margin:4px 0;font-size:0.85em;"
+                        f"color:var(--text-secondary);'>"
                         f"{a['icon']} {a['msg']}</div>",
                         unsafe_allow_html=True)
     else:

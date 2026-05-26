@@ -24,7 +24,13 @@ def render(ctx: AppCtx) -> None:
 
 def _render_event_list(sel, hist) -> None:
     events = hist[hist["disc_code"] != ""].tail(5)
-    st.markdown(f"**{sel} - 최근 60일 공시 이벤트 (룰베이스 30유형 분류)**")
+    st.markdown(
+        f"**{sel} — 최근 60일 공시 이벤트** (룰베이스 30유형) "
+        f"<span style='background:#FFF59D;color:#5C5018;padding:2px 8px;"
+        f"border-radius:8px;font-size:0.72em;font-weight:600;"
+        f"border:1px solid #F9A825;'>🧪 시뮬레이션 주입</span>",
+        unsafe_allow_html=True,
+    )
     if len(events) == 0:
         st.success("최근 60일 내 분류된 공시 이벤트 없음 (긍정 시그널)")
         return

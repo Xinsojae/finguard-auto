@@ -177,7 +177,13 @@ def _render_disclosure_card(panel, row) -> None:
     if len(recent) == 0:
         return
     st.divider()
-    st.markdown("**최근 공시 분석** (룰베이스 30유형)")
+    st.markdown(
+        "**최근 공시 분석** (룰베이스 30유형) "
+        "<span style='background:#FFF59D;color:#5C5018;padding:2px 8px;"
+        "border-radius:8px;font-size:0.72em;font-weight:600;"
+        "border:1px solid #F9A825;'>🧪 시뮬레이션 주입</span>",
+        unsafe_allow_html=True,
+    )
     for _, d in recent.iterrows():
         risk_val = int(d["disclosure"])
         color = ("#E57373" if risk_val < 0
