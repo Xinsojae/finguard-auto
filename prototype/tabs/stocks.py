@@ -72,8 +72,7 @@ def render(ctx: AppCtx) -> None:
         st.metric("예상 최악손실 (5일, 90%)", f"{var_5d:+.2f}%",
                   delta_color="inverse",
                   help="LightGBM Quantile Regression. fwd_ret_5d의 하위 10% 시나리오 (§11.2).")
-        # 신뢰도 5요소 분해
-        with st.expander("🧮 신뢰도 5요소 분해 (§11.4)"):
+        with st.expander("신뢰도 5요소 분해 (§11.4)"):
             breakdown = {
                 "유사 사례 수": row.get("conf_similarity", 0),
                 "데이터 충분성": row.get("conf_data", 0),
@@ -96,15 +95,19 @@ def _render_shap_chart(row, m_up, kfont_fp) -> None:
     # LightGBM Booster의 raw 예측 분해 (TreeSHAP과 동등한 SHAP value)
     contrib = m_up.booster_.predict(x_row, pred_contrib=True)[0][:-1]
     top_idx = np.argsort(-np.abs(contrib))[:5]
-    st.markdown("**🔍 판단 근거 (TreeSHAP Top-5)**")
+    st.markdown("**판단 근거 (TreeSHAP Top-5)**")
     fig, ax = plt.subplots(figsize=(5, 3))
     names = [FEAT_KOR[FEATS[i]] for i in top_idx][::-1]
     values = [contrib[i] for i in top_idx][::-1]
-    colors = ["#2E7D32" if v > 0 else "#C62828" for v in values]
-    ax.barh(names, values, color=colors)
-    ax.axvline(0, color="#444", lw=0.8)
-    ax.set_xlabel("SHAP contribution to 상승 score", fontproperties=kfont_fp)
-    ax.tick_params(axis="y", labelsize=9)
+    colors = ["#81C784" if v > 0 else "#E57373" for v in values]
+    ax.barh(names, values, color=colors, alpha=0.85)
+    ax.axvline(0, color="#BDBDBD", lw=0.8)
+    ax.set_xlabel("SHAP contribution to 상승 score",
+                  fontproperties=kfont_fp, color="#666")
+    ax.tick_params(axis="y", labelsize=9, colors="#555")
+    ax.tick_params(axis="x", colors="#666")
+    for sp in ax.spines.values():
+        sp.set_color("#E0E0E0")
     if kfont_fp is not None:
         for lbl in ax.get_yticklabels():
             lbl.set_fontproperties(kfont_fp)
@@ -120,7 +123,7 @@ def _render_disclosure_card(panel, row) -> None:
     if len(recent) == 0:
         return
     st.divider()
-    st.markdown("**📑 최근 공시 분석 (룰베이스 30유형 분류 · disclosure_analyzer 연동)**")
+    st.markdown("**최근 공시 분석** (룰베이스 30유형)")
     for _, d in recent.iterrows():
         risk_val = int(d["disclosure"])
         color = ("#C62828" if risk_val < 0
@@ -143,7 +146,7 @@ def _render_disclosure_card(panel, row) -> None:
 
 def _render_explanation_box(sel, cat, conf, row) -> None:
     st.divider()
-    st.markdown("**🤖 AI 설명 카드 (자연어, V3에서 HyperCLOVA X로 생성 예정)**")
+    st.markdown("**AI 설명 카드** (자연어 · 향후 HyperCLOVA X 연동 예정)")
     sign = "상승 시그널" if cat in ["PRIORITY", "HIGH-RISK"] else "관망 또는 회피"
     risk_note = ("리스크 신호도 동시에 강하므로 모의투자로 검증 권장"
                  if row["score_risk"] >= 50 else "리스크 신호는 낮음")

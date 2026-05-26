@@ -49,12 +49,15 @@ def _render_sector(pf, prices, snap, kfont_fp) -> None:
         return
     secs = list(sec_dict.keys())
     weights = [v * 100 for v in sec_dict.values()]
-    colors = ["#C62828" if v > 40 else "#F57C00" if v > 30 else "#2E7D32"
+    colors = ["#E57373" if v > 40 else "#FFB74D" if v > 30 else "#81C784"
               for v in weights]
     fig, ax = plt.subplots(figsize=(8, max(2, len(secs) * 0.4)))
-    ax.barh(secs, weights, color=colors)
-    ax.axvline(40, color="#C62828", ls="--", lw=0.8, label="한도 40%")
-    ax.set_xlabel("비중 %")
+    ax.barh(secs, weights, color=colors, alpha=0.85)
+    ax.axvline(40, color="#E57373", ls="--", lw=0.8, label="한도 40%")
+    ax.set_xlabel("비중 %", color="#666")
+    ax.tick_params(colors="#666")
+    for sp in ax.spines.values():
+        sp.set_color("#E0E0E0")
     if kfont_fp is not None:
         for lbl in ax.get_yticklabels():
             lbl.set_fontproperties(kfont_fp)

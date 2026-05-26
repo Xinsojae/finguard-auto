@@ -45,16 +45,27 @@ def _render_event_list(sel, hist) -> None:
 
 
 def _render_sentiment_chart(sel, hist, kfont_fp) -> None:
-    st.markdown(f"**최근 뉴스 감성 추세** (합성)")
-    fig, ax = plt.subplots(figsize=(9, 3))
-    ax.plot(hist["date"], hist["news_sent"], color="#1565C0", lw=1)
-    ax.axhline(0, color="#999", ls="--")
+    # 실데이터 모드는 news_sent 모두 0 (placeholder) — 의미 없는 직선 대신 안내
+    sent_var = float(hist["news_sent"].std() or 0)
+    if sent_var < 1e-6:
+        st.info(
+            f"**{sel} 뉴스 감성 추세** — 실데이터 모드에서는 뉴스 텍스트 수집·KF-DeBERTa "
+            "감성 분석이 아직 미연동입니다. 아래 '뉴스 텍스트 감성 분석' 박스에서 "
+            "직접 입력한 뉴스로 TF-IDF/KR-FinBERT 점수를 확인할 수 있습니다."
+        )
+        return
+    st.markdown(f"**{sel} 최근 60일 뉴스 감성 추세** (합성)")
+    fig, ax = plt.subplots(figsize=(9, 2.6))
+    ax.plot(hist["date"], hist["news_sent"], color="#5B8DEF", lw=1.2)
+    ax.axhline(0, color="#BDBDBD", ls="--", lw=0.8)
     ax.fill_between(hist["date"], hist["news_sent"], 0,
-                    where=hist["news_sent"] > 0, color="#2E7D32", alpha=0.2)
+                    where=hist["news_sent"] > 0, color="#81C784", alpha=0.25)
     ax.fill_between(hist["date"], hist["news_sent"], 0,
-                    where=hist["news_sent"] < 0, color="#C62828", alpha=0.2)
-    ax.set_ylabel("News Sentiment")
-    ax.set_title(f"{sel} 뉴스 감성 (60일)", fontproperties=kfont_fp)
+                    where=hist["news_sent"] < 0, color="#E57373", alpha=0.25)
+    ax.set_ylabel("Sentiment", color="#666")
+    ax.tick_params(colors="#666")
+    for s in ax.spines.values():
+        s.set_color("#E0E0E0")
     plt.tight_layout(); st.pyplot(fig); plt.close(fig)
 
 

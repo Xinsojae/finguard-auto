@@ -36,19 +36,23 @@ def render(ctx: AppCtx) -> None:
 
 
 def _render_curve(cum_a, cum_b, per_fold) -> None:
-    fig, ax = plt.subplots(figsize=(10, 4.5))
-    ax.plot(cum_a.index, cum_a.values, color="#C62828", lw=1.6,
+    fig, ax = plt.subplots(figsize=(10, 4.2))
+    ax.plot(cum_a.index, cum_a.values, color="#E57373", lw=1.6,
             label=f"A: 상승만 (누적 {cum_a.iloc[-1] - 1:+.1%})")
-    ax.plot(cum_b.index, cum_b.values, color="#2E7D32", lw=1.6,
+    ax.plot(cum_b.index, cum_b.values, color="#81C784", lw=1.6,
             label=f"B: 상승+리스크 필터 (누적 {cum_b.iloc[-1] - 1:+.1%})")
-    ax.axhline(1.0, color="#999", ls="--", lw=0.8)
+    ax.axhline(1.0, color="#BDBDBD", ls="--", lw=0.8)
     for rec in per_fold[1:]:
         ax.axvline(pd.Timestamp(rec["test_start"]),
-                   color="#1565C0", ls=":", lw=0.8, alpha=0.6)
-    ax.set_title("Cumulative Return (walk-forward, non-overlapping 5d hold)")
-    ax.set_ylabel("Cumulative Asset (start=1.0)")
-    ax.legend(loc="best")
-    ax.grid(True, alpha=0.3)
+                   color="#90A4AE", ls=":", lw=0.8, alpha=0.5)
+    ax.set_title("Cumulative Return (walk-forward, non-overlapping 5d hold)",
+                 color="#424242")
+    ax.set_ylabel("Cumulative Asset (start=1.0)", color="#666")
+    ax.tick_params(colors="#666")
+    for sp in ax.spines.values():
+        sp.set_color("#E0E0E0")
+    ax.legend(loc="best", frameon=False)
+    ax.grid(True, alpha=0.15)
     plt.tight_layout()
     st.pyplot(fig); plt.close(fig)
 

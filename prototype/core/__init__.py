@@ -2,6 +2,7 @@
 from core.config import (
     FEATS, FEAT_KOR, SECTOR_NAMES, FAKE_NAMES,
     REAL_PANEL_PATH, TICKER_META_PATH, CSS_BLOCK, RNG,
+    COLORS, CATEGORY_COLORS,
 )
 from core.data import (
     gen_panel, load_real_panel_bundled, inject_disclosure_signals,
@@ -20,6 +21,7 @@ from core.ui import classify, tag_html, apply_css
 __all__ = [
     "FEATS", "FEAT_KOR", "SECTOR_NAMES", "FAKE_NAMES",
     "REAL_PANEL_PATH", "TICKER_META_PATH", "CSS_BLOCK", "RNG",
+    "COLORS", "CATEGORY_COLORS",
     "gen_panel", "load_real_panel_bundled", "inject_disclosure_signals",
     "latest_snapshot",
     "make_features",
