@@ -16,6 +16,7 @@ FinGuard Auto - Streamlit 대시보드 프로토타입
 데이터: 합성 패널 (실데이터 전환은 load_synthetic_panel 교체)
 """
 import os
+from pathlib import Path
 import streamlit as st
 import pandas as pd
 import numpy as np
@@ -91,6 +92,38 @@ FAKE_NAMES = [
     for i, s in enumerate(["가나","다라","마바","사아","자차","카타","파하","나다","라마","바사","아자","차카",
                             "타파","하나","다라","마바","사아","자차","카타","파하","나다","라마","바사","아자"])
 ]
+
+REAL_PANEL_PATH = Path(__file__).resolve().parent / "_data" / "real_kospi_top100.pkl"
+TICKER_META_PATH = Path(__file__).resolve().parent / "_data" / "ticker_meta.json"
+
+
+@st.cache_data
+def load_real_panel_bundled() -> pd.DataFrame:
+    """KOSPI 시총 상위 100종목 일봉 (2021-01-04 ~ 2025-12-31).
+
+    poc_finguard_real.py로 사전 다운로드한 패널 (FinanceDataReader).
+    파일 부재 시 합성 fallback.
+    """
+    import json
+    if not REAL_PANEL_PATH.exists():
+        return pd.DataFrame()
+    panel = pd.read_pickle(REAL_PANEL_PATH)
+    panel["date"] = pd.to_datetime(panel["date"])
+    # 종목명 매핑
+    if TICKER_META_PATH.exists():
+        meta = json.loads(TICKER_META_PATH.read_text(encoding="utf-8"))
+        name_map = meta.get("name", {})
+        sector_map = meta.get("sector", {})
+        panel["name"] = panel["stock_id"].map(lambda t: name_map.get(str(t), str(t)))
+        if sector_map:
+            panel["sector"] = panel["stock_id"].map(
+                lambda t: sector_map.get(str(t), "기타") or "기타")
+        else:
+            panel["sector"] = panel["sector"].replace({"Unknown": "기타"})
+    else:
+        panel["name"] = panel["stock_id"].astype(str)
+    return panel
+
 
 @st.cache_data
 def gen_panel(n_stocks=150, n_days=600):
@@ -246,12 +279,43 @@ def tag_html(cat):
 # -------- 메인 --------
 st.title("🛡️ FinGuard Auto")
 st.caption("개인투자자를 위한 설명 가능한 AI 리스크 분석·투자 학습·모의 검증 플랫폼")
-st.markdown("<div class='disclaimer'>⚠️ 본 프로토타입은 합성 데이터 기반 학술 데모입니다. "
-            "실제 매수·매도 추천이 아닙니다. 최종 투자 판단·책임은 사용자에게 있습니다.</div>",
-            unsafe_allow_html=True)
 
-with st.spinner("합성 데이터 생성 + 공시 분류 주입 + 모델 학습 중..."):
-    panel = gen_panel(n_stocks=120, n_days=600)
+# -------- 데이터 모드 선택 --------
+_real_available = REAL_PANEL_PATH.exists()
+_default_mode_idx = 0 if _real_available else 1
+data_mode = st.radio(
+    "데이터 모드",
+    ["🇰🇷 실데이터 (KOSPI 시총 상위 100, 2021~2025)", "🎲 합성 데이터 (빠른 데모)"],
+    index=_default_mode_idx, horizontal=True,
+    help="실데이터: FinanceDataReader로 사전 다운로드한 KOSPI 99종목 일봉. "
+         "합성: GARCH형 패널 (속도 우선).",
+)
+USE_REAL = data_mode.startswith("🇰🇷")
+
+if USE_REAL and not _real_available:
+    st.error(f"실데이터 파일 없음: {REAL_PANEL_PATH}. 합성 모드로 자동 전환.")
+    USE_REAL = False
+
+if USE_REAL:
+    st.markdown(
+        "<div class='disclaimer'>⚠️ 실데이터 모드: KOSPI 시총 상위 99종목(2021-01-04 ~ 2025-12-31). "
+        "공시·뉴스 NLP 피처는 룰베이스 분류기로 주입(KF-DeBERTa는 확장 계획). "
+        "본 분석은 매수·매도 추천이 아닌 의사결정 보조이며, 최종 판단·책임은 사용자에게 있습니다.</div>",
+        unsafe_allow_html=True,
+    )
+else:
+    st.markdown(
+        "<div class='disclaimer'>⚠️ 합성 데이터 모드: GARCH형 패널 (120종목 × 600일). "
+        "실제 매수·매도 추천이 아닙니다. 최종 투자 판단·책임은 사용자에게 있습니다.</div>",
+        unsafe_allow_html=True,
+    )
+
+with st.spinner(("실데이터 로드" if USE_REAL else "합성 데이터 생성")
+                + " + 공시 분류 주입 + 모델 학습 중..."):
+    if USE_REAL:
+        panel = load_real_panel_bundled()
+    else:
+        panel = gen_panel(n_stocks=120, n_days=600)
     panel = inject_disclosure_signals(panel, n_events_per_stock=4)
     panel = make_features(panel)
     m_up, m_cr, metrics = train_models(panel)
@@ -360,7 +424,7 @@ with tab1:
                 plt.close(fig)
 
             # ----- 최근 공시 분석 (룰베이스 30유형 분류 결과) -----
-            sid = int(row["stock_id"])
+            sid = row["stock_id"]  # int(합성) 또는 str(실데이터)
             recent_disc = panel[
                 (panel["stock_id"] == sid) & (panel["disc_code"] != "")
             ].sort_values("date").tail(3)
