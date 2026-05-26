@@ -115,11 +115,13 @@ def _render_sentiment_analyzer() -> None:
                 else:
                     color, tag = "#9E9E9E", "⚪ 중립"
                 st.markdown(
-                    f"<div style='border-left:4px solid {color};padding:8px 12px;"
-                    f"margin:6px 0;background:#FAFAFA;border-radius:4px;'>"
+                    f"<div style='border-left:4px solid {color};padding:10px 14px;"
+                    f"margin:6px 0;background:var(--bg-elevated);"
+                    f"border:1px solid var(--border-subtle);"
+                    f"border-radius:8px;'>"
                     f"<b style='color:{color};'>{tag}</b> "
                     f"<span style='color:{color};font-weight:700;'>score {s:+.3f}</span>"
-                    f"<br><small>{t}</small></div>",
+                    f"<br><small style='color:var(--text-secondary);'>{t}</small></div>",
                     unsafe_allow_html=True,
                 )
             with st.expander("ℹ️ 모델 정보"):

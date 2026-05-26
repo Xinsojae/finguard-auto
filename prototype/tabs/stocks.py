@@ -180,16 +180,21 @@ def _render_disclosure_card(panel, row) -> None:
     st.markdown("**최근 공시 분석** (룰베이스 30유형)")
     for _, d in recent.iterrows():
         risk_val = int(d["disclosure"])
-        color = ("#C62828" if risk_val < 0
-                 else "#2E7D32" if risk_val > 0 else "#666")
+        color = ("#E57373" if risk_val < 0
+                 else "#34D399" if risk_val > 0 else "#94A3B8")
         st.markdown(
-            f"<div style='border-left:4px solid {color};padding:8px 12px;"
-            f"margin:6px 0;background:#FAFAFA;border-radius:4px;'>"
-            f"<b>{d['date'].date()}</b> · "
-            f"<span style='color:{color};font-weight:700;'>"
+            f"<div style='border-left:4px solid {color};padding:10px 14px;"
+            f"margin:6px 0;background:var(--bg-elevated);"
+            f"border:1px solid var(--border-subtle);"
+            f"border-radius:8px;'>"
+            f"<b style='color:var(--text-primary);'>{d['date'].date()}</b> "
+            f"<span style='color:var(--text-muted);'>·</span> "
+            f"<span style='color:{color};font-weight:600;'>"
             f"[{d['disc_name']}] {d['disc_risk_label']}</span> "
-            f"(risk_score {risk_val:+d})"
-            f"<br><small style='color:#555;'>{d['disc_explanation']}</small>"
+            f"<span style='color:var(--text-muted);font-size:0.85em;'>"
+            f"(risk_score {risk_val:+d})</span>"
+            f"<br><small style='color:var(--text-secondary);"
+            f"line-height:1.5;'>{d['disc_explanation']}</small>"
             f"</div>",
             unsafe_allow_html=True,
         )

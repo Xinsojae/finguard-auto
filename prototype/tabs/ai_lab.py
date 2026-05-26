@@ -71,7 +71,9 @@ def _render_clova(ctx: AppCtx) -> None:
         buf = ""
         for ch in text:
             buf += ch
-            ph.markdown(f"<div style='padding:14px 18px;background:#F5F7FA;"
+            ph.markdown(f"<div style='padding:14px 18px;background:var(--bg-elevated);"
+                        f"border:1px solid var(--border-subtle);"
+                        f"color:var(--text-primary);"
                         f"border-radius:8px;line-height:1.7;font-size:0.95em;'>"
                         f"{buf}▍</div>", unsafe_allow_html=True)
             if len(buf) % 4 == 0:

@@ -95,13 +95,13 @@ def render_tour_widget() -> None:
     cur = TOUR_STEPS[step]
     progress = (step + 1) / total
     st.markdown(
-        f"<div style='background:#FFF8E1;padding:12px 14px;"
-        f"border:1px solid #FFCA28;border-radius:8px;margin:8px 0;'>"
+        f"<div style='background:var(--warning-soft);padding:12px 14px;"
+        f"border:1px solid var(--warning);border-radius:8px;margin:8px 0;'>"
         f"<div style='display:flex;justify-content:space-between;"
-        f"font-size:0.8em;color:#7A4E13;margin-bottom:6px;'>"
+        f"font-size:0.8em;color:var(--warning);margin-bottom:6px;font-weight:600;'>"
         f"<span>📖 데모 투어</span><span>{step + 1} / {total}</span></div>"
-        f"<div style='font-weight:600;color:#424242;margin-bottom:6px;'>{cur['title']}</div>"
-        f"<div style='color:#555;font-size:0.88em;line-height:1.5;'>{cur['body']}</div>"
+        f"<div style='font-weight:600;color:var(--text-primary);margin-bottom:6px;'>{cur['title']}</div>"
+        f"<div style='color:var(--text-secondary);font-size:0.88em;line-height:1.5;'>{cur['body']}</div>"
         f"</div>",
         unsafe_allow_html=True,
     )

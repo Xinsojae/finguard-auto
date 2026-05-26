@@ -36,12 +36,15 @@ def section_header(title: str, subtitle: str = "",
 
 
 def info_card(title: str, body: str, color: str = "#5B8DEF") -> None:
-    """좌측 색 바 + 본문 카드."""
+    """좌측 색 바 + 본문 카드 (다크/라이트 자동 대응)."""
     st.markdown(
-        f"<div style='border-left:4px solid {color};background:#FAFAFA;"
-        f"padding:12px 16px;border-radius:6px;margin:8px 0;'>"
-        f"<b style='color:#424242;'>{title}</b>"
-        f"<div style='color:#555;font-size:0.92em;margin-top:6px;line-height:1.5;'>{body}</div>"
+        f"<div style='border-left:4px solid {color};"
+        f"background:var(--bg-elevated);"
+        f"border:1px solid var(--border-subtle);"
+        f"padding:14px 18px;border-radius:10px;margin:10px 0;'>"
+        f"<b style='color:var(--text-primary);'>{title}</b>"
+        f"<div style='color:var(--text-secondary);font-size:0.92em;"
+        f"margin-top:6px;line-height:1.55;'>{body}</div>"
         f"</div>",
         unsafe_allow_html=True,
     )
