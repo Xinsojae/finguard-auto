@@ -29,13 +29,20 @@ _KFONT_CANDIDATES = [
     "/usr/share/fonts/truetype/nanum/NanumGothic.ttf",
     "/usr/share/fonts/truetype/nanum/NanumBarunGothic.ttf",
     "/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc",
+    "/usr/share/fonts/truetype/noto/NotoSansCJK-Regular.ttc",
     "C:/Windows/Fonts/malgun.ttf",
     "/System/Library/Fonts/AppleSDGothicNeo.ttc",
 ]
+KFONT_PATH = None
+KFONT_FP = None
 for _f in _KFONT_CANDIDATES:
     if os.path.exists(_f):
         font_manager.fontManager.addfont(_f)
-        plt.rcParams["font.family"] = font_manager.FontProperties(fname=_f).get_name()
+        _name = font_manager.FontProperties(fname=_f).get_name()
+        plt.rcParams["font.family"] = "sans-serif"
+        plt.rcParams["font.sans-serif"] = [_name] + plt.rcParams["font.sans-serif"]
+        KFONT_PATH = _f
+        KFONT_FP = font_manager.FontProperties(fname=_f)
         break
 plt.rcParams["axes.unicode_minus"] = False
 
@@ -292,8 +299,12 @@ with tab1:
                 colors = ["#2E7D32" if v>0 else "#C62828" for v in values]
                 ax.barh(names, values, color=colors)
                 ax.axvline(0, color="#444", lw=0.8)
-                ax.set_xlabel("SHAP contribution to 상승 score")
+                ax.set_xlabel("SHAP contribution to 상승 score",
+                              fontproperties=KFONT_FP)
                 ax.tick_params(axis="y", labelsize=9)
+                if KFONT_FP is not None:
+                    for lbl in ax.get_yticklabels():
+                        lbl.set_fontproperties(KFONT_FP)
                 plt.tight_layout()
                 st.pyplot(fig)
                 plt.close(fig)
@@ -333,7 +344,8 @@ with tab2:
         ax.scatter([r["score_up"]], [r["score_risk"]], facecolor="none",
                    edgecolor="black", linewidth=2, s=150, marker="o")
         ax.annotate(name, (r["score_up"], r["score_risk"]),
-                    fontsize=8, xytext=(5, 5), textcoords="offset points")
+                    fontsize=8, xytext=(5, 5), textcoords="offset points",
+                    fontproperties=KFONT_FP)
     ax.axhline(50, color="#444", ls="--", lw=1)
     ax.axvline(50, color="#444", ls="--", lw=1)
     ax.set_xlim(0,100); ax.set_ylim(0,100)
@@ -373,7 +385,8 @@ with tab3:
                         where=hist["news_sent"]>0, color="#2E7D32", alpha=0.2)
         ax.fill_between(hist["date"], hist["news_sent"], 0,
                         where=hist["news_sent"]<0, color="#C62828", alpha=0.2)
-        ax.set_ylabel("News Sentiment"); ax.set_title(f"{sel} 뉴스 감성 (60일)")
+        ax.set_ylabel("News Sentiment")
+        ax.set_title(f"{sel} 뉴스 감성 (60일)", fontproperties=KFONT_FP)
         plt.tight_layout(); st.pyplot(fig); plt.close(fig)
 
 with tab4:
