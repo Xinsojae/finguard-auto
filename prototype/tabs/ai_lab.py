@@ -26,7 +26,9 @@ def render(ctx: AppCtx) -> None:
         "데모 모듈",
         ["💬 HyperCLOVA X 설명", "📄 KoBigBird 장문 요약",
          "📈 PatchTST 시계열 예측", "🎤 Whisper 컨퍼런스콜",
-         "🎯 Conformal Prediction", "📑 OCR 공시 PDF"],
+         "🎯 Conformal Prediction", "📑 OCR 공시 PDF",
+         "🔬 Permutation Importance", "📉 ALE Plot",
+         "🔗 KoSimCSE 유사사례"],
         horizontal=True,
     )
 
@@ -42,6 +44,12 @@ def render(ctx: AppCtx) -> None:
         _render_conformal(ctx)
     elif sub.startswith("📑"):
         _render_ocr()
+    elif sub.startswith("🔬"):
+        _render_perm_importance(ctx)
+    elif sub.startswith("📉"):
+        _render_ale(ctx)
+    elif sub.startswith("🔗"):
+        _render_kosimcse()
 
 
 # ============================================================
@@ -248,3 +256,110 @@ def _render_ocr() -> None:
                   f"{out['extracted_text_preview']}</pre>",
                   color="#81C784")
         st.caption(f"처리 시간 (mock): {out['processing_time_sec']:.1f}초 · 파일: {fn}")
+
+
+# ============================================================
+def _render_perm_importance(ctx: AppCtx) -> None:
+    section_header("Permutation Importance",
+                   "기획서 §14.2 — 각 피처를 셔플했을 때 예측 성능 감소량. "
+                   "실제 sklearn.permutation_importance 사용 (검증셋 일부).",
+                   icon="🔬")
+    from core.config import FEATS
+    target = st.radio("타깃", ["target_up (상승)", "target_crash (급락)"],
+                      horizontal=True, key="pi_target")
+    target_col = "target_up" if "상승" in target else "target_crash"
+    model = ctx.m_up if target_col == "target_up" else ctx.m_cr
+    if st.button("🚀 Permutation Importance 계산", type="primary", key="pi_run"):
+        with st.spinner("셔플 + 재예측 (n_repeats=3, max_rows=5000)..."):
+            df = mocks.permutation_importance_quick(model, ctx.panel, FEATS, target_col)
+        if "error" in df.columns:
+            st.error(df["error"].iloc[0])
+            return
+        # 한글 피처명 매핑
+        from core.config import FEAT_KOR
+        df["feature_kor"] = df["feature"].map(lambda f: FEAT_KOR.get(f, f))
+        fig = go.Figure(go.Bar(
+            x=df["importance_mean"], y=df["feature_kor"],
+            orientation="h",
+            error_x=dict(type="data", array=df["importance_std"], color="#94A3B8"),
+            marker=dict(color="#5B8DEF", opacity=0.85),
+            text=[f"{v:.4f}" for v in df["importance_mean"]],
+            textposition="outside",
+            hovertemplate="%{y}: %{x:.4f} ± %{error_x.array:.4f}<extra></extra>",
+        ))
+        lk = layout_kwargs(height=max(360, len(df) * 28))
+        lk["xaxis"].update(title="ROC-AUC 감소량 (셔플 시)")
+        fig.update_layout(**lk)
+        st.plotly_chart(fig, use_container_width=True)
+        st.caption(f"상위 3개 피처: {', '.join(df['feature_kor'].head(3).tolist())} — "
+                   "이들 피처를 셔플하면 모델 성능이 가장 크게 떨어짐 = 가장 중요.")
+
+
+# ============================================================
+def _render_ale(ctx: AppCtx) -> None:
+    section_header("ALE Plot (Accumulated Local Effects)",
+                   "기획서 §14.2 — 단일 피처 값 변경 시 예측 변화. "
+                   "Partial Dependence보다 상관 피처에 robust.",
+                   icon="📉")
+    from core.config import FEATS, FEAT_KOR
+    sel = st.selectbox("피처 선택", FEATS,
+                       format_func=lambda f: f"{FEAT_KOR.get(f, f)} ({f})",
+                       key="ale_feat")
+    target = st.radio("타깃", ["target_up (상승)", "target_crash (급락)"],
+                      horizontal=True, key="ale_target")
+    model = ctx.m_up if "상승" in target else ctx.m_cr
+    if st.button("📊 ALE 계산", type="primary", key="ale_run"):
+        with st.spinner(f"{FEAT_KOR.get(sel, sel)} 20개 구간 평균 예측..."):
+            df = mocks.ale_1d(model, ctx.panel, sel, FEATS,
+                              target_col="target_up" if "상승" in target else "target_crash")
+        if df.empty:
+            st.warning("계산 실패. 데이터 부족.")
+            return
+        fig = go.Figure()
+        fig.add_trace(go.Scatter(
+            x=df["grid_value"], y=df["effect"],
+            mode="lines+markers",
+            line=dict(color="#5B8DEF", width=2),
+            marker=dict(size=6),
+            fill="tozeroy", fillcolor="rgba(91,141,239,0.15)",
+            hovertemplate="값: %{x:.4f}<br>effect: %{y:+.4f}<extra></extra>",
+        ))
+        p = palette()
+        fig.add_hline(y=0, line_dash="dash", line_color=p["axis_line_color"])
+        lk = layout_kwargs(height=360)
+        lk["xaxis"].update(title=f"{FEAT_KOR.get(sel, sel)} 값 (분위)")
+        lk["yaxis"].update(title="예측 확률 변화 (centered)")
+        fig.update_layout(**lk)
+        st.plotly_chart(fig, use_container_width=True)
+        st.caption("0보다 큰 구간 = 해당 피처값이 상승 확률을 높임. "
+                   "0보다 작은 구간 = 낮춤. 곡선 기울기 = 민감도.")
+
+
+# ============================================================
+def _render_kosimcse() -> None:
+    section_header("KoSimCSE 유사 사례 검색",
+                   "기획서 §14.2 — 한국어 문장 임베딩으로 과거 유사 공시 패턴 검색. "
+                   "현재는 mock 7건 + 키워드 매칭 부스트.",
+                   icon="🔗", demo=True)
+    q = st.text_input(
+        "현재 종목의 상황 또는 공시 키워드",
+        "유상증자 시설투자 자금 조달",
+        key="ksc_q",
+    )
+    top_k = st.slider("Top K", 3, 7, 5, key="ksc_topk")
+    if st.button("🔍 유사 사례 검색", type="primary", key="ksc_run"):
+        df = mocks.kosimcse_similar_cases(q, top_k=top_k)
+        st.markdown("**유사도 순 정렬 결과**")
+        for _, r in df.iterrows():
+            sim_pct = r["sim"] * 100
+            bar = "█" * int(sim_pct / 10) + "░" * (10 - int(sim_pct / 10))
+            info_card(
+                f"{r['name']} — {r['event']} ({r['date']})",
+                f"<b style='color:#5B8DEF;'>유사도 {sim_pct:.0f}%</b> "
+                f"<span style='font-family:monospace;color:#94A3B8;'>{bar}</span>"
+                f"<br><span style='color:var(--text-secondary);'>"
+                f"<b>결과:</b> {r['outcome']}</span>",
+                color="#5B8DEF",
+            )
+        st.caption(f"실제 KoSimCSE: 한국어 SimCSE finetune 모델 → 임베딩 → 코사인 유사도. "
+                   f"현재는 mock {len(df)}건.")

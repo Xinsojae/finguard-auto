@@ -347,6 +347,94 @@ def conformal_interval(score_up_p: float, n_calibration: int = 500,
 
 
 # ============================================================
+# 11. Permutation Importance (실제 sklearn, 빠른 1-shot)
+# ============================================================
+def permutation_importance_quick(model, panel, feats: list,
+                                 target_col: str = "target_up",
+                                 n_repeats: int = 3, max_rows: int = 5000) -> pd.DataFrame:
+    """sklearn.permutation_importance 단축 버전 — 검증셋 일부만 사용."""
+    from sklearn.inspection import permutation_importance
+    df = panel.dropna(subset=feats + [target_col])
+    if len(df) > max_rows:
+        df = df.tail(max_rows)
+    X, y = df[feats], df[target_col]
+    try:
+        r = permutation_importance(model, X, y, n_repeats=n_repeats,
+                                   random_state=42, n_jobs=1)
+        out = pd.DataFrame({
+            "feature": feats,
+            "importance_mean": r.importances_mean,
+            "importance_std": r.importances_std,
+        }).sort_values("importance_mean", ascending=False)
+        return out
+    except Exception as e:
+        return pd.DataFrame({"error": [str(e)]})
+
+
+# ============================================================
+# 12. ALE Plot (단일 피처 1D, 실제 계산)
+# ============================================================
+def ale_1d(model, panel, feat: str, all_feats: list,
+           target_col: str = "target_up", n_bins: int = 20,
+           max_rows: int = 3000) -> pd.DataFrame:
+    """1D Accumulated Local Effects — 단일 피처 변경 시 예측 변화."""
+    df = panel.dropna(subset=all_feats + [target_col])
+    if len(df) > max_rows:
+        df = df.sample(max_rows, random_state=42)
+    if feat not in df.columns:
+        return pd.DataFrame()
+    quantiles = np.linspace(0.05, 0.95, n_bins + 1)
+    grid = df[feat].quantile(quantiles).values
+    # 각 grid 값으로 모든 행을 대체 → 예측 평균
+    rows = []
+    for v in grid:
+        X = df[all_feats].copy()
+        X[feat] = v
+        pred = model.predict_proba(X)[:, 1].mean()
+        rows.append({"grid_value": v, "predicted_prob": pred})
+    out = pd.DataFrame(rows)
+    # ALE는 centered effect — 평균 차감
+    out["effect"] = out["predicted_prob"] - out["predicted_prob"].mean()
+    return out
+
+
+# ============================================================
+# 13. KoSimCSE 유사 사례 검색 (mock)
+# ============================================================
+_SIM_CASES = [
+    {"date": "2024-03-15", "name": "A전자", "event": "유상증자 발표",
+     "outcome": "공시 후 5일 -8.2%, 30일 -12.5%", "sim": 0.92},
+    {"date": "2023-11-22", "name": "B케미칼", "event": "주요 거래처 이탈",
+     "outcome": "공시 후 5일 -6.1%, 회복 시간 약 2개월", "sim": 0.87},
+    {"date": "2024-07-08", "name": "C바이오", "event": "임상 3상 결과 발표",
+     "outcome": "공시 후 5일 +18.4%, 30일 +25.1%", "sim": 0.84},
+    {"date": "2023-09-19", "name": "D금융", "event": "자사주 매입·소각",
+     "outcome": "공시 후 5일 +4.2%, 안정적 상승", "sim": 0.81},
+    {"date": "2024-01-30", "name": "E산업", "event": "분기 흑자전환",
+     "outcome": "공시 후 5일 +12.7%, 30일 +18.3%", "sim": 0.78},
+    {"date": "2023-12-14", "name": "F홀딩스", "event": "최대주주 변경",
+     "outcome": "공시 후 5일 +6.5%, 변동성 확대", "sim": 0.76},
+    {"date": "2024-05-02", "name": "G테크", "event": "M&A 인수 결정",
+     "outcome": "공시 후 5일 -3.8%, 통합 리스크 우려", "sim": 0.74},
+]
+
+
+def kosimcse_similar_cases(query: str, top_k: int = 5) -> pd.DataFrame:
+    """KoSimCSE 임베딩 유사 사례 검색 (mock).
+
+    query 길이 기반으로 가짜 유사도 미세 조정.
+    """
+    cases = _SIM_CASES[:top_k]
+    # query 키워드 매칭 시 sim 가산
+    boost_kw = {"유상증자": 0, "거래처": 1, "임상": 2, "자사주": 3,
+                "흑자": 4, "최대주주": 5, "인수": 6}
+    for kw, idx in boost_kw.items():
+        if kw in query and idx < len(cases):
+            cases[idx] = {**cases[idx], "sim": min(0.98, cases[idx]["sim"] + 0.05)}
+    return pd.DataFrame(sorted(cases, key=lambda r: -r["sim"]))
+
+
+# ============================================================
 # 10. OCR 공시 PDF (mock)
 # ============================================================
 def ocr_mock_pdf_analyze(filename: str = "공시.pdf") -> dict:
