@@ -10,17 +10,33 @@ from sklearn.metrics import (
 from core.config import FEATS
 
 
+EMBARGO_DAYS = 5   # fwd_ret_5d 누수 차단용 purge 폭
+
+
 @st.cache_resource
 def train_models(panel: pd.DataFrame):
-    """단일 70/30 holdout으로 상승·급락 LightGBM 학습 (대시보드 SHAP·점수용).
+    """날짜 기반 70/30 시간 분할 + 5일 embargo 적용 LightGBM 학습.
 
-    walk-forward 평가는 walk_forward_backtest() 별도.
+    수정 이력:
+      - 이전 버전: 행 기준 70/30 → 데이터가 (stock_id, date) 정렬이라
+        실제로는 종목군 분할이었음 (out-of-time 아님).
+      - 현재: unique date 70/30 분할 + 학습 후 EMBARGO_DAYS 제거하여
+        train 라벨이 val 첫 5거래일을 참조하지 못하도록 차단.
     """
     df = panel.dropna(subset=FEATS + ["target_up", "target_crash"]).reset_index(drop=True)
-    n = len(df)
-    cut = int(n * 0.7)
-    tr = df.iloc[:cut]
-    va = df.iloc[cut:]
+    if df.empty:
+        raise ValueError("학습 가능한 데이터 없음 (FEATS·target NaN dropna 결과 0행)")
+
+    dates = np.array(sorted(df["date"].unique()))
+    n_dates = len(dates)
+    cut_idx = int(n_dates * 0.7)
+    # purge: train 끝 ~ val 시작 사이 EMBARGO_DAYS 일자 제거
+    train_end_idx = max(cut_idx - EMBARGO_DAYS, 1)
+    train_dates = dates[:train_end_idx]
+    val_dates = dates[cut_idx:]
+    tr = df[df["date"].isin(train_dates)]
+    va = df[df["date"].isin(val_dates)]
+
     m_up = lgb.LGBMClassifier(
         objective="binary", num_leaves=31, learning_rate=0.05,
         n_estimators=300, min_data_in_leaf=200, verbose=-1, random_state=42)
@@ -40,6 +56,11 @@ def train_models(panel: pd.DataFrame):
         up_pr=average_precision_score(va["target_up"], p_up),
         cr_auc=roc_auc_score(va["target_crash"], p_cr),
         cr_pr=average_precision_score(va["target_crash"], p_cr),
+        train_date_max=str(pd.Timestamp(train_dates[-1]).date()),
+        val_date_min=str(pd.Timestamp(val_dates[0]).date()),
+        val_date_max=str(pd.Timestamp(val_dates[-1]).date()),
+        n_train_rows=len(tr),
+        n_val_rows=len(va),
     )
     return m_up, m_cr, metrics
 
@@ -83,7 +104,9 @@ def walk_forward_backtest(panel: pd.DataFrame, n_folds: int = 3, k_top: int = 20
         test_end = min(train_end + fold_len, N)
         if test_end - test_start < hold_days + 1:
             continue
-        train_dates = dates[:train_end]
+        # purge/embargo: train 마지막 hold_days 일자 제거 (5일 forward-label 누수 차단)
+        train_cut = max(train_end - hold_days, 1)
+        train_dates = dates[:train_cut]
         test_dates = dates[test_start:test_end]
         tr = df[df["date"].isin(train_dates)]
         te = df[df["date"].isin(test_dates)].copy()

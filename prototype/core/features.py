@@ -1,4 +1,5 @@
 """기술지표·뉴스·공시·시장국면 → 학습용 피처 생성."""
+import numpy as np
 import pandas as pd
 import streamlit as st
 
@@ -39,6 +40,10 @@ def make_features(df: pd.DataFrame) -> pd.DataFrame:
         lambda s: s.abs().rolling(20).sum().shift(1))
     df["regime_lag1"] = g["regime"].transform(lambda s: s.shift(1))
     df["fwd_ret_5d"] = g["close"].transform(lambda s: s.pct_change(5).shift(-5))
-    df["target_up"] = (df["fwd_ret_5d"] > df["fwd_ret_5d"].quantile(0.70)).astype(int)
-    df["target_crash"] = (df["fwd_ret_5d"] < -0.05).astype(int)
+    # 타깃: fwd_ret_5d가 NaN(마지막 5거래일)이면 라벨도 NaN으로 유지
+    # → 학습 시 dropna로 자동 제외 (이전 버그: NaN < 임계값 = False → 0 라벨로 학습됨)
+    q70 = df["fwd_ret_5d"].quantile(0.70)
+    fwd = df["fwd_ret_5d"]
+    df["target_up"] = np.where(fwd.isna(), np.nan, (fwd > q70).astype(float))
+    df["target_crash"] = np.where(fwd.isna(), np.nan, (fwd < -0.05).astype(float))
     return df
