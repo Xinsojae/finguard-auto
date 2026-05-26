@@ -22,6 +22,7 @@ from core import (
     gen_panel, load_real_panel_bundled, inject_disclosure_signals,
     latest_snapshot, make_features, train_models,
     train_anomaly_detector, score_snapshot,
+    train_quantile_model, predict_quantile,
     compute_confidence_for_snap,
     classify, apply_css,
 )
@@ -118,6 +119,7 @@ with st.spinner(("실데이터 로드" if USE_REAL else "합성 데이터 생성
     panel = make_features(panel)
     m_up, m_cr, metrics = train_models(panel)
     iso_model = train_anomaly_detector(panel)
+    q_model = train_quantile_model(panel, alpha=0.10)
     snap, latest_date = latest_snapshot(panel)
     snap["score_up_p"] = m_up.predict_proba(snap[FEATS])[:, 1]
     snap["score_cr_p"] = m_cr.predict_proba(snap[FEATS])[:, 1]
@@ -135,6 +137,8 @@ with st.spinner(("실데이터 로드" if USE_REAL else "합성 데이터 생성
     snap["confidence"] = snap["confidence_overall"]
     # Isolation Forest 이상 탐지 (§10.2 MVP #3)
     snap["anomaly_score"] = score_snapshot(iso_model, snap)
+    # Quantile 손실 구간 (§11.2 마지막 요소)
+    snap["var_5d_p10"] = predict_quantile(q_model, snap)
 
 
 # ============================================================

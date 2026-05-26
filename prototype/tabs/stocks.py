@@ -68,6 +68,10 @@ def render(ctx: AppCtx) -> None:
         st.metric("이상 탐지 (IF)", f"{anom}/100",
                   delta=anom_lbl, delta_color="off",
                   help="Isolation Forest: 거래량·변동성 패턴 비정상도. ≥70 의심.")
+        var_5d = float(row.get("var_5d_p10", 0)) * 100
+        st.metric("예상 최악손실 (5일, 90%)", f"{var_5d:+.2f}%",
+                  delta_color="inverse",
+                  help="LightGBM Quantile Regression. fwd_ret_5d의 하위 10% 시나리오 (§11.2).")
         # 신뢰도 5요소 분해
         with st.expander("🧮 신뢰도 5요소 분해 (§11.4)"):
             breakdown = {

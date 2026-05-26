@@ -10,6 +10,7 @@ from core.data import (
 from core.features import make_features
 from core.models import train_models, walk_forward_backtest
 from core.anomaly import train_anomaly_detector, score_snapshot
+from core.quantile_risk import train_quantile_model, predict_quantile
 from core.confidence import (
     compute_confidence_for_snap, compute_confidence_for_stock,
     ConfidenceBreakdown,
@@ -24,6 +25,7 @@ __all__ = [
     "make_features",
     "train_models", "walk_forward_backtest",
     "train_anomaly_detector", "score_snapshot",
+    "train_quantile_model", "predict_quantile",
     "compute_confidence_for_snap", "compute_confidence_for_stock",
     "ConfidenceBreakdown",
     "classify", "tag_html", "apply_css",
