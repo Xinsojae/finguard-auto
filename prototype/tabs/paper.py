@@ -43,10 +43,12 @@ def render(ctx: AppCtx) -> None:
     roi = (total_equity / INITIAL_CASH - 1) * 100
 
     # ----- 리스크 엔진 + Kill Switch (§12) -----
+    # 세션 단위에선 일일과 누적 구분 불가 → 세션 누적 손익률로 평가
+    # (실 운영 시 일별 NAV 추적 + 일일 PnL 별도 계산 필요)
     mkt_avg_risk = float(snap["score_risk"].mean())
-    daily_pnl_pct = total_pnl / INITIAL_CASH
+    session_pnl_pct = total_pnl / INITIAL_CASH
     ks = check_kill_switch(market_avg_risk=mkt_avg_risk,
-                           daily_pnl_pct=daily_pnl_pct)
+                           daily_pnl_pct=session_pnl_pct)
     pf.kill_switch_active = ks.active
     if ks.active:
         st.error(ks.banner_text())
@@ -56,7 +58,9 @@ def render(ctx: AppCtx) -> None:
         for rule in summarize_rules():
             st.markdown(f"- {rule}")
         st.caption(f"현재: 시장 평균 리스크 {mkt_avg_risk:.0f}/100 · "
-                   f"일일 손익 {daily_pnl_pct*100:+.2f}%")
+                   f"세션 누적 손익 {session_pnl_pct*100:+.2f}% "
+                   f"(실 운영의 '일일 손실 한도'는 매일 0시 reset; "
+                   f"본 데모는 세션 누적으로 단순화)")
     c1, c2, c3, c4 = st.columns(4)
     c1.metric("초기 자금", f"{INITIAL_CASH:,.0f}원")
     c2.metric("총 평가액", f"{total_equity:,.0f}원",
@@ -150,16 +154,25 @@ def render(ctx: AppCtx) -> None:
             st.markdown(f"- {w}")
 
     # ----- 자동 청산 검토 (손절·익절·보유만료) -----
+    # days_held: 마지막 BUY ts → 현재 시각 차이 (실 운영은 영업일이지만 데모는 달력일)
+    from datetime import datetime
+    now_dt = datetime.now()
     sell_candidates = []
     for sid, pos in pf.positions.items():
         if pos.qty == 0:
             continue
         cur = prices.get(sid, pos.avg_price)
-        # days_held: 마지막 BUY 시각 기반 단순 추정 (실시간 dummy = 0일)
         last_buy = next(
             (t for t in reversed(pf.trades)
              if t.side == "BUY" and t.stock_id == sid), None)
-        days_held = 0  # session 안에선 일수 추적 어려움 — 손절/익절만 활성
+        if last_buy:
+            try:
+                buy_dt = datetime.strptime(last_buy.ts, "%Y-%m-%d %H:%M:%S")
+                days_held = max((now_dt - buy_dt).days, 0)
+            except Exception:
+                days_held = 0
+        else:
+            days_held = 0
         should, reason = auto_close_check(pos.avg_price, cur, days_held)
         if should:
             sell_candidates.append((sid, pos, cur, reason))

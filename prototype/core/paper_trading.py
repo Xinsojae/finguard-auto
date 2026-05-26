@@ -112,6 +112,8 @@ def place_buy(pf: Portfolio, stock_id: str, name: str, qty: int,
 
 def place_sell(pf: Portfolio, stock_id: str, qty: int, price: float,
                reason: str = "수동") -> str:
+    if qty <= 0 or price <= 0:
+        return "수량·가격은 양수여야 함"
     pos = pf.positions.get(stock_id)
     if pos is None or pos.qty == 0:
         return f"{stock_id} 보유 수량 없음"

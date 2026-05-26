@@ -561,7 +561,17 @@ with st.sidebar:
     picks = st.multiselect("관심 종목", pool, default=default_picks)
     st.divider()
     st.subheader("🌡️ 오늘의 시장")
-    st.metric("기준일", str(latest_date.date()))
+    from datetime import date as _date
+    latest_d = latest_date.date() if hasattr(latest_date, "date") else latest_date
+    days_stale = (_date.today() - latest_d).days
+    if days_stale > 14:
+        stale_lbl = f"⚠️ {days_stale}일 전"
+    elif days_stale > 3:
+        stale_lbl = f"⏰ {days_stale}일 전"
+    else:
+        stale_lbl = "최신"
+    st.metric("기준일", str(latest_d), delta=stale_lbl, delta_color="off",
+              help=f"데이터 최신 시점. 오늘({_date.today()})과 차이 {days_stale}일.")
     st.metric("시장 위험도", f"{mkt_risk}/100 ({mkt_label})")
     st.metric("우선 관심 후보 수", int((snap["category"] == "PRIORITY").sum()))
     st.metric("회피 후보 수", int((snap["category"] == "AVOID").sum()))

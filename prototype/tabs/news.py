@@ -112,6 +112,7 @@ def _render_sentiment_analyzer() -> None:
                 st.warning("입력 텍스트가 비어 있습니다.")
                 return
             scores = model.analyze(texts_in)
+            import html as _html
             st.markdown(f"**사용 모델**: `{model.label}`")
             for t, s in zip(texts_in, scores):
                 if s > 0.2:
@@ -120,6 +121,8 @@ def _render_sentiment_analyzer() -> None:
                     color, tag = "#C62828", "🔴 악재"
                 else:
                     color, tag = "#9E9E9E", "⚪ 중립"
+                # 사용자 입력 텍스트 HTML escape (XSS 차단)
+                safe_t = _html.escape(t)
                 st.markdown(
                     f"<div style='padding:10px 14px 10px 18px;"
                     f"margin:6px 0;background:var(--bg-elevated);"
@@ -128,7 +131,7 @@ def _render_sentiment_analyzer() -> None:
                     f"border-radius:8px;'>"
                     f"<b style='color:{color};'>{tag}</b> "
                     f"<span style='color:{color};font-weight:700;'>score {s:+.3f}</span>"
-                    f"<br><small style='color:var(--text-secondary);'>{t}</small></div>",
+                    f"<br><small style='color:var(--text-secondary);'>{safe_t}</small></div>",
                     unsafe_allow_html=True,
                 )
             with st.expander("ℹ️ 모델 정보"):
