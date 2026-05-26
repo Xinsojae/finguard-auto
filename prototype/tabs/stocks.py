@@ -2,6 +2,8 @@
 import numpy as np
 import streamlit as st
 import matplotlib.pyplot as plt
+import plotly.graph_objects as go
+from plotly.subplots import make_subplots
 
 from core.config import FEATS, FEAT_KOR
 from core.ui import tag_html, tag_plain
@@ -86,8 +88,55 @@ def render(ctx: AppCtx) -> None:
     with c3:
         _render_shap_chart(row, ctx.m_up, ctx.kfont_fp)
 
+    _render_price_chart(panel, row, sel)
     _render_disclosure_card(panel, row)
     _render_explanation_box(sel, cat, conf, row)
+
+
+def _render_price_chart(panel, row, sel) -> None:
+    """60일 가격 + 거래량 (Plotly 2-row subplot)."""
+    sid = row["stock_id"]
+    hist = panel[panel["stock_id"] == sid].tail(60)
+    if hist.empty:
+        return
+    st.divider()
+    st.markdown("**가격·거래량 (최근 60일)**")
+    fig = make_subplots(rows=2, cols=1, shared_xaxes=True,
+                        vertical_spacing=0.05, row_heights=[0.7, 0.3])
+    # 종가 라인
+    fig.add_trace(go.Scatter(
+        x=hist["date"], y=hist["close"], mode="lines",
+        name="종가", line=dict(color="#5B8DEF", width=1.8),
+        hovertemplate="%{x|%Y-%m-%d}<br>종가: %{y:,.0f}원<extra></extra>",
+    ), row=1, col=1)
+    # MA20
+    ma20 = hist["close"].rolling(20).mean()
+    fig.add_trace(go.Scatter(
+        x=hist["date"], y=ma20, mode="lines",
+        name="MA20", line=dict(color="#FFB74D", width=1.2, dash="dash"),
+        hovertemplate="%{x|%Y-%m-%d}<br>MA20: %{y:,.0f}<extra></extra>",
+    ), row=1, col=1)
+    # 거래량 (수익률 부호로 색)
+    colors = ["#81C784" if r > 0 else "#E57373" for r in hist["return"].fillna(0)]
+    fig.add_trace(go.Bar(
+        x=hist["date"], y=hist["volume"], name="거래량",
+        marker=dict(color=colors, opacity=0.6),
+        hovertemplate="%{x|%Y-%m-%d}<br>거래량: %{y:,.0f}<extra></extra>",
+    ), row=2, col=1)
+    fig.update_layout(
+        height=360,
+        margin=dict(l=10, r=10, t=10, b=10),
+        plot_bgcolor="white", paper_bgcolor="white",
+        legend=dict(orientation="h", yanchor="bottom", y=1.02,
+                    xanchor="left", x=0),
+        hovermode="x unified",
+        font=dict(family="Malgun Gothic, sans-serif", color="#555"),
+        showlegend=True,
+    )
+    fig.update_xaxes(gridcolor="#F0F0F0", showgrid=True)
+    fig.update_yaxes(gridcolor="#F0F0F0", showgrid=True, row=1, col=1, title="원")
+    fig.update_yaxes(gridcolor="#F0F0F0", showgrid=True, row=2, col=1, title="거래량")
+    st.plotly_chart(fig, use_container_width=True)
 
 
 def _render_shap_chart(row, m_up, kfont_fp) -> None:

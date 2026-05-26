@@ -174,13 +174,39 @@ mkt_risk = int(snap["score_risk"].mean())
 mkt_label = "낮음" if mkt_risk < 35 else "중간" if mkt_risk < 55 else "높음"
 
 with st.sidebar:
+    # ----- 검색·필터 (워치리스트 위) -----
+    st.subheader("🔍 검색 · 필터")
+    search_q = st.text_input("종목명 검색", "", placeholder="예: 삼성, 하이닉스",
+                             key="sb_search")
+    sector_options = sorted(snap["sector"].dropna().unique().tolist())
+    sector_filter = st.multiselect("섹터 필터", sector_options,
+                                   default=[], key="sb_sector")
+    f_col1, f_col2 = st.columns(2)
+    with f_col1:
+        min_up = st.slider("상승 ≥", 0, 100, 0, step=10, key="sb_min_up")
+    with f_col2:
+        max_risk = st.slider("리스크 ≤", 0, 100, 100, step=10, key="sb_max_risk")
+
+    # 필터 적용된 후보 풀
+    filtered = snap.copy()
+    if search_q.strip():
+        q = search_q.strip().lower()
+        filtered = filtered[filtered["name"].str.lower().str.contains(q)]
+    if sector_filter:
+        filtered = filtered[filtered["sector"].isin(sector_filter)]
+    filtered = filtered[(filtered["score_up"] >= min_up)
+                        & (filtered["score_risk"] <= max_risk)]
+    st.caption(f"필터 결과: **{len(filtered)}** / {len(snap)}종목")
+
+    st.divider()
     st.subheader("📋 워치리스트")
+    pool = filtered["name"].tolist() if not filtered.empty else snap["name"].tolist()
     default_picks = (snap.nlargest(8, "score_up").head(5)["name"].tolist()
                      + snap.nlargest(5, "score_risk").head(2)["name"].tolist()
                      + [snap.iloc[0]["name"]])
-    picks = st.multiselect(
-        "관심 종목", snap["name"].tolist(),
-        default=list(dict.fromkeys(default_picks))[:6])
+    # default는 풀에 있는 것만
+    default_picks = [n for n in dict.fromkeys(default_picks) if n in pool][:6]
+    picks = st.multiselect("관심 종목", pool, default=default_picks)
     st.divider()
     st.subheader("🌡️ 오늘의 시장")
     st.metric("기준일", str(latest_date.date()))
