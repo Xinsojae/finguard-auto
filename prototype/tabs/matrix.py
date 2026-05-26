@@ -9,7 +9,11 @@ from tabs import AppCtx
 
 def render(ctx: AppCtx) -> None:
     st.subheader("2×2 기회-위험 매트릭스")
-    st.caption("점 = 종목. 우측 상단: 상승 가능성 높음 + 리스크 낮음 = 우선 관심 후보")
+    st.caption(
+        "점 = 종목. **우측 하단** = 상승↑ · 리스크↓ → 우선 관심 / "
+        "우측 상단 = 상승↑ · 리스크↑ → 고위험 관심 / "
+        "좌측 하단 = 상승↓ · 리스크↓ → 관망 / 좌측 상단 = 상승↓ · 리스크↑ → 회피"
+    )
 
     snap = ctx.snap
     fig = go.Figure()

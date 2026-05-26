@@ -435,7 +435,12 @@ with st.sidebar:
         st.caption("**백테스트 파라미터**")
         CFG_K_TOP = st.slider("리밸런스 picks (k_top)", 5, 50, 20, step=5)
         CFG_RISK_PCT = st.slider("리스크 필터 분위 (B 전략)", 0.50, 0.95, 0.70, step=0.05)
-        CFG_HOLD = st.slider("보유 일수 (비중첩)", 3, 20, 5, step=1)
+        CFG_HOLD = st.slider(
+            "보유 일수 (비중첩)", 5, 20, 5, step=1,
+            help="수익률 측정은 항상 fwd_ret_5d (5일 후 수익률). "
+                 "보유 일수 < 5 시 forward-label embargo 부족으로 누수 발생 → 최소 5. "
+                 "5 초과 시 보유 표시는 그만큼 늘어나지만 실 수익은 5일치만 측정됨.",
+        )
 
 
 # ============================================================
