@@ -251,6 +251,112 @@ if st.session_state["dark_mode"]:
       color: #E2E8F0 !important;
       border: 1px solid #2D3548 !important;
     }
+    [data-baseweb="tooltip"] * { color: #E2E8F0 !important; }
+
+    /* popover 내부 input·textarea (multiselect typeahead, search) */
+    [data-baseweb="popover"] input,
+    [data-baseweb="popover"] textarea {
+      background: #11161F !important;
+      color: #FFFFFF !important;
+      border-color: #2D3548 !important;
+      caret-color: #60A5FA !important;
+    }
+
+    /* popover 내부 hover/focus 강조 — option 외 다른 클릭 가능 영역 */
+    [data-baseweb="popover"] [role="option"]:focus,
+    [data-baseweb="popover"] [aria-selected="true"],
+    [data-baseweb="popover"] [data-highlighted="true"] {
+      background: #1A2030 !important;
+      color: #FFFFFF !important;
+    }
+
+    /* popover 내부 divider / separator */
+    [data-baseweb="popover"] hr,
+    [data-baseweb="popover"] [role="separator"],
+    [data-baseweb="popover"] [class*="Divider"] {
+      background: #2D3548 !important;
+      background-color: #2D3548 !important;
+      border-color: #2D3548 !important;
+    }
+
+    /* popover 화살표 (arrow/caret) */
+    [data-baseweb="popover-arrow"],
+    [data-baseweb="popover"] [data-baseweb*="arrow"] {
+      background: #11161F !important;
+      background-color: #11161F !important;
+      border-color: #2D3548 !important;
+      fill: #11161F !important;
+    }
+
+    /* popover 내부 흰 배경 인라인 스타일 강제 override */
+    [data-baseweb="popover"] [style*="background-color: white"],
+    [data-baseweb="popover"] [style*="background-color: rgb(255, 255, 255)"],
+    [data-baseweb="popover"] [style*="background-color:#fff"],
+    [data-baseweb="popover"] [style*="background-color:#FFFFFF"],
+    [data-baseweb="popover"] [style*="background: white"],
+    [data-baseweb="popover"] [style*="background: rgb(255, 255, 255)"],
+    [data-baseweb="popover"] [style*="background:#fff"] {
+      background: #11161F !important;
+      background-color: #11161F !important;
+    }
+
+    /* popover 내부 svg checkmark / radio */
+    [data-baseweb="popover"] svg path,
+    [data-baseweb="popover"] svg circle,
+    [data-baseweb="popover"] svg rect {
+      fill: #94A3B8 !important;
+    }
+    [data-baseweb="popover"] [aria-selected="true"] svg path,
+    [data-baseweb="popover"] [aria-selected="true"] svg {
+      fill: #60A5FA !important;
+    }
+
+    /* popover 내부 체크박스 (multiselect 옵션 좌측 체크) */
+    [data-baseweb="popover"] [data-baseweb="checkbox"] {
+      background: transparent !important;
+    }
+    [data-baseweb="popover"] [data-baseweb="checkbox"] > span {
+      border-color: #2D3548 !important;
+      background: #11161F !important;
+    }
+    [data-baseweb="popover"] [data-baseweb="checkbox"][aria-checked="true"] > span {
+      background: #60A5FA !important;
+      border-color: #60A5FA !important;
+    }
+
+    /* date picker / calendar popover */
+    [data-baseweb="calendar"],
+    [data-baseweb="datepicker"],
+    [data-baseweb="month-year-select-form"] {
+      background: #11161F !important;
+      color: #E2E8F0 !important;
+    }
+    [data-baseweb="calendar"] * { color: #E2E8F0 !important; }
+    [data-baseweb="calendar"] button {
+      background: transparent !important;
+      color: #E2E8F0 !important;
+    }
+    [data-baseweb="calendar"] button:hover {
+      background: #1A2030 !important;
+      color: #FFFFFF !important;
+    }
+    [data-baseweb="calendar"] [aria-selected="true"] {
+      background: #60A5FA !important;
+      color: #0A0E14 !important;
+    }
+
+    /* popover 스크롤바 다크 */
+    [data-baseweb="popover"] ::-webkit-scrollbar {
+      width: 8px;
+      background: #11161F;
+    }
+    [data-baseweb="popover"] ::-webkit-scrollbar-thumb {
+      background: #2D3548;
+      border-radius: 4px;
+    }
+    [data-baseweb="popover"] ::-webkit-scrollbar-thumb:hover {
+      background: #3F4859;
+    }
 
     /* ===== Multiselect 내부 텍스트·검색 입력 가시성 ===== */
     /* 선택된 값/placeholder/검색 input 글씨 모두 밝게 */
