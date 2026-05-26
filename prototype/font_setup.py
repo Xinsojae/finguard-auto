@@ -8,15 +8,20 @@ import 시점에 자동 등록되며, 다른 모듈은 다음과 같이 사용:
     ax.set_title("제목", fontproperties=KFONT_FP)
 
 폰트 우선순위:
-    Linux (Streamlit Cloud): NanumGothic > NanumBarunGothic > Noto CJK
-    Windows: 맑은 고딕
-    macOS: Apple SD Gothic Neo
+    1. 번들 NanumGothic (_data/fonts/) — 항상 동작 보장
+    2. Linux 시스템 (apt fonts-nanum / Noto CJK)
+    3. Windows 맑은 고딕
+    4. macOS Apple SD Gothic Neo
 """
 import os
+from pathlib import Path
 import matplotlib.pyplot as plt
 from matplotlib import font_manager
 
+_BUNDLED = Path(__file__).resolve().parent / "_data" / "fonts" / "NanumGothic-Regular.ttf"
+
 _KFONT_CANDIDATES = [
+    str(_BUNDLED),  # 1순위: 저장소 번들 (Streamlit Cloud apt 실패 대비)
     "/usr/share/fonts/truetype/nanum/NanumGothic.ttf",
     "/usr/share/fonts/truetype/nanum/NanumBarunGothic.ttf",
     "/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc",

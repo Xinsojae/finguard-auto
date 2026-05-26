@@ -1,0 +1,14 @@
+NanumGothic Font
+================
+
+Source: https://github.com/google/fonts/tree/main/ofl/nanumgothic
+License: SIL Open Font License, Version 1.1
+Copyright: Naver Corporation (https://www.naver.com)
+
+Bundled in this repository to guarantee Korean glyph rendering on
+deployment environments (Streamlit Community Cloud) where system
+font installation via `packages.txt` (fonts-nanum) may not always
+succeed on first build.
+
+Per SIL OFL terms, this font may be freely redistributed with or
+without modification, including embedding in a product.
