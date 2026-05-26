@@ -385,22 +385,29 @@ with tab4:
         rb_s = pd.Series(rets_b, index=dates_bt)
         cum_a = (1+ra_s).cumprod(); cum_b = (1+rb_s).cumprod()
 
-    fig, ax = plt.subplots(figsize=(10, 4.5))
-    ax.plot(cum_a.index, cum_a.values, color="#C62828", lw=1.5,
-            label=f"A: 상승만 (누적 {cum_a.iloc[-1]-1:+.1%})")
-    ax.plot(cum_b.index, cum_b.values, color="#2E7D32", lw=1.5,
-            label=f"B: 상승+리스크 필터 (누적 {cum_b.iloc[-1]-1:+.1%})")
-    ax.axhline(1.0, color="#999", ls="--", lw=0.8)
-    ax.set_title("Cumulative Return")
-    ax.set_ylabel("Cumulative Asset (start=1.0)")
-    ax.legend(); ax.grid(True, alpha=0.3)
-    plt.tight_layout(); st.pyplot(fig); plt.close(fig)
+    if len(cum_a) == 0:
+        st.warning(
+            "백테스트 가능한 날짜 그룹이 없습니다. 패널 크기가 너무 작아 "
+            "일별 종목 수가 60개 미만일 가능성이 큽니다. "
+            "사이드바에서 n_stocks/n_days를 늘려보세요."
+        )
+    else:
+        fig, ax = plt.subplots(figsize=(10, 4.5))
+        ax.plot(cum_a.index, cum_a.values, color="#C62828", lw=1.5,
+                label=f"A: 상승만 (누적 {cum_a.iloc[-1]-1:+.1%})")
+        ax.plot(cum_b.index, cum_b.values, color="#2E7D32", lw=1.5,
+                label=f"B: 상승+리스크 필터 (누적 {cum_b.iloc[-1]-1:+.1%})")
+        ax.axhline(1.0, color="#999", ls="--", lw=0.8)
+        ax.set_title("Cumulative Return")
+        ax.set_ylabel("Cumulative Asset (start=1.0)")
+        ax.legend(); ax.grid(True, alpha=0.3)
+        plt.tight_layout(); st.pyplot(fig); plt.close(fig)
 
-    c1, c2, c3, c4 = st.columns(4)
-    c1.metric("A 평균 수익률", f"{ra_s.mean()*100:.2f}%/주")
-    c2.metric("B 평균 수익률", f"{rb_s.mean()*100:.2f}%/주")
-    c3.metric("A MDD", f"{((1+ra_s).cumprod()/(1+ra_s).cumprod().cummax()-1).min()*100:.1f}%")
-    c4.metric("리스크 필터 회피 후보", f"{avoided:,}")
+        c1, c2, c3, c4 = st.columns(4)
+        c1.metric("A 평균 수익률", f"{ra_s.mean()*100:.2f}%/주")
+        c2.metric("B 평균 수익률", f"{rb_s.mean()*100:.2f}%/주")
+        c3.metric("A MDD", f"{(cum_a/cum_a.cummax()-1).min()*100:.1f}%")
+        c4.metric("리스크 필터 회피 후보", f"{avoided:,}")
 
     st.divider()
     st.markdown("**📝 해석**")
