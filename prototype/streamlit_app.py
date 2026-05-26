@@ -156,6 +156,66 @@ if st.session_state["dark_mode"]:
       background: var(--accent) !important;
       border-color: var(--accent-hover) !important;
     }
+
+    /* ===== 입력 위젯 — 사이드바: 더 어두운 채도 + 흰 글씨 ===== */
+    /* 종목명 검색 (text input) */
+    [data-testid="stSidebar"] .stTextInput input {
+      background: #060A12 !important;
+      border: 1px solid #1A2030 !important;
+      color: #FFFFFF !important;
+    }
+    [data-testid="stSidebar"] .stTextInput input::placeholder {
+      color: #6B7280 !important;
+    }
+
+    /* 섹터 필터 / 관심 종목 (multiselect) — closed state */
+    [data-testid="stSidebar"] .stMultiSelect [data-baseweb="select"] > div,
+    [data-testid="stSidebar"] .stSelectbox [data-baseweb="select"] > div {
+      background: #060A12 !important;
+      border: 1px solid #1A2030 !important;
+      color: #FFFFFF !important;
+    }
+
+    /* 비교할 종목 (main 영역 multiselect) */
+    .main .stMultiSelect [data-baseweb="select"] > div,
+    .main .stSelectbox [data-baseweb="select"] > div {
+      background: #0B1018 !important;
+      border: 1px solid #1F2937 !important;
+      color: #FFFFFF !important;
+    }
+
+    /* 선택된 multiselect 태그 (chip) - 사이드바·본문 공통 */
+    [data-baseweb="tag"] {
+      background: #1A2030 !important;
+      border: 1px solid #2D3548 !important;
+      color: #FFFFFF !important;
+    }
+    [data-baseweb="tag"] span,
+    [data-baseweb="tag"] div { color: #FFFFFF !important; }
+    [data-baseweb="tag"] svg { fill: #FFFFFF !important; }
+
+    /* 라벨 — 관심 종목 / 비교할 종목 / 종목명 검색 / 섹터 필터 — 흰색 */
+    [data-testid="stSidebar"] .stTextInput label,
+    [data-testid="stSidebar"] .stMultiSelect label,
+    [data-testid="stSidebar"] .stSelectbox label,
+    .main .stMultiSelect label,
+    .main .stSelectbox label {
+      color: #FFFFFF !important;
+      font-weight: 500 !important;
+    }
+
+    /* 드롭다운 옵션 리스트 */
+    [data-baseweb="popover"] [data-baseweb="menu"] {
+      background: #11161F !important;
+      border: 1px solid #2D3548 !important;
+    }
+    [data-baseweb="popover"] [role="option"] {
+      color: #E2E8F0 !important;
+    }
+    [data-baseweb="popover"] [role="option"]:hover {
+      background: #1A2030 !important;
+      color: #FFFFFF !important;
+    }
     </style>
     """, unsafe_allow_html=True)
 

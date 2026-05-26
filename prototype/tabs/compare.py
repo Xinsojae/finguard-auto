@@ -47,7 +47,7 @@ def render(ctx: AppCtx) -> None:
     # ----- 2. 가격 비교 (정규화) -----
     st.markdown("### 2. 가격 추세 비교 (시작=100 정규화, 최근 60일)")
     fig = go.Figure()
-    palette = ["#5B8DEF", "#E57373", "#81C784", "#FFB74D"]
+    series_colors = ["#5B8DEF", "#E57373", "#81C784", "#FFB74D"]
     for i, r in enumerate(rows):
         sid = r["stock_id"]
         hist = ctx.panel[ctx.panel["stock_id"] == sid].tail(60).copy()
@@ -56,7 +56,7 @@ def render(ctx: AppCtx) -> None:
         norm = (hist["close"] / hist["close"].iloc[0] * 100)
         fig.add_trace(go.Scatter(
             x=hist["date"], y=norm, mode="lines",
-            name=r["name"], line=dict(color=palette[i % 4], width=2),
+            name=r["name"], line=dict(color=series_colors[i % 4], width=2),
             hovertemplate=f"<b>{r['name']}</b><br>%{{x|%Y-%m-%d}}<br>지수: %{{y:.1f}}<extra></extra>",
         ))
     p = palette()
@@ -81,7 +81,7 @@ def render(ctx: AppCtx) -> None:
         values = [contrib[idx] for idx in top_idx]
         fig.add_trace(go.Bar(
             x=names, y=values, name=r["name"],
-            marker=dict(color=palette[i % 4], opacity=0.75),
+            marker=dict(color=series_colors[i % 4], opacity=0.75),
             hovertemplate=f"<b>{r['name']}</b><br>%{{x}}<br>SHAP: %{{y:+.3f}}<extra></extra>",
         ))
     p = palette()
