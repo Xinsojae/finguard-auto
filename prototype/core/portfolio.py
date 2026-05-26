@@ -52,13 +52,14 @@ def portfolio_var(positions: dict, prices: dict, panel: pd.DataFrame,
     pivot = sub.pivot_table(index="date", columns="stock_id", values="return").tail(window)
     w_arr = np.array([weights.get(str(c), 0.0) for c in pivot.columns])
     port_ret = pivot.fillna(0).values @ w_arr
-    var95 = -float(np.quantile(port_ret, 0.05)) if len(port_ret) > 0 else 0.0
-    var99 = -float(np.quantile(port_ret, 0.01)) if len(port_ret) > 0 else 0.0
+    # VaR는 손실액(양수)이어야 함 — quantile이 양수(이익만 있음)면 손실 0으로 clip
+    var95 = max(-float(np.quantile(port_ret, 0.05)), 0.0) if len(port_ret) > 0 else 0.0
+    var99 = max(-float(np.quantile(port_ret, 0.01)), 0.0) if len(port_ret) > 0 else 0.0
+    max_loss = max(-float(port_ret.min()), 0.0) if len(port_ret) > 0 else 0.0
     return {
         "VaR_95": var95 * total_mv,
         "VaR_99": var99 * total_mv,
-        "expected_max_loss": (-float(port_ret.min()) * total_mv
-                              if len(port_ret) > 0 else 0.0),
+        "expected_max_loss": max_loss * total_mv,
         "n_days": len(port_ret),
         "total_mv": total_mv,
     }

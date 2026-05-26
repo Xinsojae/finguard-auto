@@ -411,12 +411,21 @@ import streamlit as _st  # 캐싱용 (모듈 전역 1회)
 def permutation_importance_quick(_model, panel, feats: list,
                                  target_col: str = "target_up",
                                  n_repeats: int = 3, max_rows: int = 5000) -> pd.DataFrame:
-    """sklearn.permutation_importance 단축 버전 — 검증셋 일부만 사용.
+    """sklearn.permutation_importance — 시간 분할 val 구간(뒤 30%) 기반.
 
-    _model은 leading underscore → Streamlit이 hashing 건너뜀 (모델 객체는 해시 불가).
+    이전 버그: df.tail(5000) → panel이 (stock_id, date) 정렬이라
+    마지막 일부 종목의 전 기간 샘플이 됨. 검증셋 평가가 아니라
+    일부 종목 평가가 되어 모델 설명이 오인 가능.
+    수정: unique date의 마지막 30%만 사용 → train_models의 val과 동일 구간.
     """
     from sklearn.inspection import permutation_importance
     df = panel.dropna(subset=feats + [target_col])
+    # 시간 분할 val 구간 (뒤 30%)
+    dates = np.array(sorted(df["date"].unique()))
+    if len(dates) >= 10:
+        cut_idx = int(len(dates) * 0.7)
+        val_dates = dates[cut_idx:]
+        df = df[df["date"].isin(val_dates)]
     if len(df) > max_rows:
         df = df.tail(max_rows)
     X, y = df[feats], df[target_col]
